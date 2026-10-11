@@ -2,19 +2,19 @@
 
 ETAPY = [
     {"nr": 1, "nazwa": "Eksploracja danych, architektura", "status": "gotowe"},
-    {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "w kolejce"},
-    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "—"},
-    {"nr": 4, "nazwa": "Dashboard Power BI", "status": "—"},
-    {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": "—"},
-    {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": "—"},
-    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": "—"},
-    {"nr": 8, "nazwa": "Prognoza na jutro w aplikacji", "status": "—"},
+    {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "następny"},
+    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": ""},
+    {"nr": 4, "nazwa": "Dashboard Power BI", "status": ""},
+    {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": ""},
+    {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": ""},
+    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": ""},
+    {"nr": 8, "nazwa": "Prognoza na jutro w aplikacji", "status": ""},
 ]
 
 NOTATKI = [
     (
         "Zmiana czasu",
-        "PSE zapisuje powtórzoną godzinę jako <code>02a:15</code>, a doba ma 92, 96 albo 100 "
+        "PSE zapisuje powtórzoną godzinę jako „02a:15”, a doba ma 92, 96 albo 100 "
         "kwadransów. Wszystko trzymam w UTC, czas polski liczę dopiero przy prezentacji.",
     ),
     (
