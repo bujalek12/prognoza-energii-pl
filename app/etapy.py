@@ -1,40 +1,40 @@
-"""Postep projektu: aktualizowany na koniec kazdego etapu."""
+"""Stan projektu i notatki: aktualizowane na koniec kazdego etapu."""
 
 ETAPY = [
-    {"nr": 1, "nazwa": "Eksploracja danych i architektura", "rola": "DE / DA", "status": "zrobione"},
-    {"nr": 2, "nazwa": "Ingestia: retry, walidacja, inkrementalnie, snapshot prognoz", "rola": "DE", "status": "nastepny"},
-    {"nr": 3, "nazwa": "Hurtownia DuckDB + dbt, testy danych", "rola": "DE", "status": "czeka"},
-    {"nr": 4, "nazwa": "Analiza i dashboard Power BI", "rola": "DA", "status": "czeka"},
-    {"nr": 5, "nazwa": "Model: LightGBM + pogoda, backtesting", "rola": "DS", "status": "czeka"},
-    {"nr": 6, "nazwa": "Porównanie z PSE, SHAP", "rola": "DS", "status": "czeka"},
-    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "rola": "MLOps", "status": "czeka"},
-    {"nr": 8, "nazwa": "Aplikacja z prognozą na żywo", "rola": "MLOps", "status": "czeka"},
+    {"nr": 1, "nazwa": "Eksploracja danych, architektura", "status": "gotowe"},
+    {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "w kolejce"},
+    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "—"},
+    {"nr": 4, "nazwa": "Dashboard Power BI", "status": "—"},
+    {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": "—"},
+    {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": "—"},
+    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": "—"},
+    {"nr": 8, "nazwa": "Prognoza na jutro w aplikacji", "status": "—"},
 ]
 
-ODKRYCIA = {
-    1: [
-        (
-            "Zmiana czasu psuje czas lokalny",
-            "Doby mają 92, 96 albo 100 kwadransów, a powtórzona godzina ma zapis `02a:15`. "
-            "Kluczem czasu w całym projekcie jest UTC.",
-        ),
-        (
-            "Plan PSE w API jest nadpisywany",
-            "Ostatnia wersja planu publikowana jest ~22,5 h po starcie doby, więc zna część przyszłości. "
-            "Pipeline będzie archiwizował każdą publikację (snapshot), żeby mieć uczciwy benchmark.",
-        ),
-        (
-            "Pogoda: tylko prognozy, nie fakty",
-            "Model jutro zna tylko prognozę pogody. Trening na faktycznej pogodzie to wyciek danych.",
-        ),
-        (
-            "Pogoda dobrze tłumaczy OZE",
-            "Korelacja wiatr 100 m vs generacja wiatrowa: 0,81; promieniowanie vs PV: 0,93. "
-            "Zależności są nieliniowe, więc lepszy będzie model drzewiasty.",
-        ),
-        (
-            "Święta obniżają popyt",
-            "Wyraźny dołek zapotrzebowania w Wielkanoc 2026. Model potrzebuje kalendarza świąt.",
-        ),
-    ],
-}
+NOTATKI = [
+    (
+        "Zmiana czasu",
+        "PSE zapisuje powtórzoną godzinę jako <code>02a:15</code>, a doba ma 92, 96 albo 100 "
+        "kwadransów. Wszystko trzymam w UTC, czas polski liczę dopiero przy prezentacji.",
+    ),
+    (
+        "Plan PSE jest nadpisywany",
+        "Wersja planu dostępna w API ma znacznik publikacji średnio 22,5 h po początku doby. "
+        "Do uczciwego porównania trzeba samemu archiwizować każdą publikację.",
+    ),
+    (
+        "Pogoda: prognozy, nie pomiary",
+        "Model ma dostęp tylko do prognozy pogody, więc uczę go na historycznych prognozach "
+        "z Open-Meteo, a nie na reanalizie.",
+    ),
+    (
+        "Wiatr i PV a pogoda",
+        "Korelacja z prędkością wiatru na 100 m wynosi 0,81, z promieniowaniem 0,93 (mar–kwi 2026). "
+        "Przy PV widać dwie gałęzie, prawdopodobnie przesunięcie czasowe. Do sprawdzenia.",
+    ),
+    (
+        "Święta",
+        "W Wielkanoc (5–6.04.2026) szczyt dobowy wyniósł 15–16 GW, w zwykły dzień roboczy "
+        "21–23 GW. Model dostanie kalendarz świąt jako cechę.",
+    ),
+]
