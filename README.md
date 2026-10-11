@@ -22,8 +22,9 @@ Szczegoly: [notebook eksploracyjny](notebooks/01_eksploracja.ipynb), [architektu
 ## Uruchomienie
 ```bash
 uv sync
-uv run jupyter lab
+uv run streamlit run app/app.py   # panel projektu: postep + dane na zywo
+uv run jupyter lab                # notebooki
 ```
 
 ## Stack
-Python 3.13, uv, httpx, pandas · (wkrotce) DuckDB, dbt, LightGBM, MLflow, Streamlit, GitHub Actions
+Python 3.13, uv, httpx, pandas, Streamlit, Altair · (wkrotce) DuckDB, dbt, LightGBM, MLflow, Streamlit, GitHub Actions
