@@ -19,10 +19,10 @@ REPO = "https://github.com/bujalek12/prognoza-energii-pl"
 
 # Kolory serii: przypisane do zjawiska, nie do kolejnosci na wykresie
 SERIE = {
-    "Zapotrzebowanie": "#2b2b29",
-    "Zapotrzebowanie rezydualne": "#2a78d6",
-    "Wiatr": "#1baf7a",
-    "Fotowoltaika": "#eda100",
+    "Zapotrzebowanie": "#e8e7e2",
+    "Zapotrzebowanie rezydualne": "#3987e5",
+    "Wiatr": "#199e70",
+    "Fotowoltaika": "#c98500",
 }
 
 st.markdown(
@@ -30,16 +30,16 @@ st.markdown(
     <style>
       .block-container { padding-top: 2.2rem; max-width: 1180px; }
       .nadtytul { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase;
-                  color: #6b6a65; margin-bottom: .15rem; }
+                  color: #9a9992; margin-bottom: .15rem; }
       h1 { font-weight: 600 !important; letter-spacing: -.01em; }
       [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; font-size: 1.7rem; }
-      .przypis { color: #6b6a65; font-size: .85rem; }
-      .notatka { border-left: 2px solid #d9d8d3; padding: .1rem 0 .1rem .9rem; margin: 0 0 1rem 0; }
+      .przypis { color: #9a9992; font-size: .85rem; }
+      .notatka { border-left: 2px solid #3a3a37; padding: .1rem 0 .1rem .9rem; margin: 0 0 1rem 0; }
       .notatka b { font-weight: 600; }
       table.etapy { border-collapse: collapse; width: 100%; font-size: .92rem; border: none; }
-      table.etapy td { border: none; border-bottom: 1px solid #ecebe7; padding: .42rem .3rem; }
-      table.etapy td.nr { color: #8a8984; width: 1.6rem; font-variant-numeric: tabular-nums; }
-      table.etapy td.st { color: #6b6a65; text-align: right; white-space: nowrap; }
+      table.etapy td { border: none; border-bottom: 1px solid #2a2a27; padding: .42rem .3rem; }
+      table.etapy td.nr { color: #7a7973; width: 1.6rem; font-variant-numeric: tabular-nums; }
+      table.etapy td.st { color: #9a9992; text-align: right; white-space: nowrap; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -123,7 +123,7 @@ os_x = alt.X(
 )
 # d3-format w Vega nie zna polskiego locale, wiec separator tysiecy podmieniam recznie
 os_y_osie = alt.Axis(
-    gridColor="#ecebe7",
+    gridColor="#2a2a27",
     domain=False,
     tickCount=5,
     labelExpr="replace(format(datum.value, ',.0f'), /,/g, '\u202f')",
@@ -132,7 +132,7 @@ os_y_osie = alt.Axis(
 oze = (
     alt.Chart(dlugi)
     .transform_filter(alt.FieldOneOfPredicate("seria", ["Wiatr", "Fotowoltaika"]))
-    .mark_area(opacity=0.55, line={"strokeWidth": 1}, interpolate="monotone")
+    .mark_area(opacity=0.6, line={"strokeWidth": 1}, interpolate="monotone")
     .encode(
         x=os_x,
         y=alt.Y("MW:Q", stack="zero", title="MW", axis=os_y_osie),
@@ -158,7 +158,7 @@ tooltip_df = wykres_df.assign(
 )
 linia_kursora = (
     alt.Chart(tooltip_df)
-    .mark_rule(color="#8a8984", strokeWidth=1)
+    .mark_rule(color="#7a7973", strokeWidth=1)
     .encode(
         x="czas:T",
         opacity=alt.condition(kursor, alt.value(1), alt.value(0)),
