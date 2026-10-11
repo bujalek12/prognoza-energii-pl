@@ -1,0 +1,1 @@
+"""Prognozowanie polskiego systemu energetycznego."""

@@ -1,0 +1,26 @@
+[project]
+name = "energia"
+version = "0.1.0"
+description = "Prognozowanie zapotrzebowania i generacji OZE w polskim systemie energetycznym"
+readme = "README.md"
+authors = [
+    { name = "Maciej Bujalski" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pyarrow>=25.0.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.4.0",
+    "jupyter>=1.1.1",
+    "jupytext>=1.19.6",
+]
