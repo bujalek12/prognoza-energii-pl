@@ -11,32 +11,11 @@ from datetime import date
 import httpx
 import pandas as pd
 
+from energia.http import BladPobierania, pobierz_json
+
+__all__ = ["BladPobierania", "pobierz_raport", "wykonanie_do_ramki", "plan_do_ramki"]
+
 PSE_API = "https://api.raporty.pse.pl/api"
-PROBY = 4
-
-
-class BladPobierania(Exception):
-    """API nie zwrocilo danych mimo ponowien albo odrzucilo zapytanie."""
-
-
-def _pobierz_strone(
-    klient: httpx.Client, url: str, params: dict | None, czekaj: Callable[[float], None]
-) -> dict:
-    for proba in range(PROBY):
-        try:
-            odp = klient.get(url, params=params)
-        except httpx.TransportError as e:
-            blad = f"blad polaczenia: {e}"
-        else:
-            if odp.is_success:
-                return odp.json()
-            # 4xx to blad zapytania (zla nazwa raportu, zly filtr): ponawianie nic nie zmieni
-            if odp.is_client_error and odp.status_code != 429:
-                raise BladPobierania(f"{url}: HTTP {odp.status_code}")
-            blad = f"HTTP {odp.status_code}"
-        if proba < PROBY - 1:
-            czekaj(2**proba)
-    raise BladPobierania(f"{url}: {blad} (po {PROBY} probach)")
 
 
 def pobierz_raport(
@@ -54,7 +33,7 @@ def pobierz_raport(
         params: dict | None = {"$filter": f"business_date ge '{od}' and business_date le '{do}'"}
         wiersze: list[dict] = []
         while url:
-            dane = _pobierz_strone(klient, url, params, czekaj)
+            dane = pobierz_json(klient, url, params, czekaj)
             wiersze.extend(dane["value"])
             url = dane.get("nextLink")
             params = None  # nextLink zawiera juz wszystkie parametry
@@ -83,3 +62,24 @@ def wykonanie_do_ramki(wiersze: list[dict]) -> pd.DataFrame:
         .set_index("ts_utc")
         .sort_index()[["doba", "zapotrzebowanie", "wiatr", "pv", "publikacja_utc"]]
     )
+
+
+
+def plan_do_ramki(wiersze: list[dict]) -> pd.DataFrame:
+    """Raport pdgobpkd (plan koordynacyjny dobowy) -> wiersze (kwadrans, wersja publikacji).
+
+    Klucz to para (ts_utc, publikacja_utc), a nie sam kwadrans: kazda publikacja planu
+    to osobna wersja prognozy i chcemy je wszystkie zachowac w archiwum.
+    """
+    kolumny = ["dtime_utc", "business_date", "kse_pow_dem", "gen_wi", "gen_fv", "publication_ts_utc"]
+    df = pd.DataFrame(wiersze, columns=kolumny).dropna(subset=["kse_pow_dem"])
+    return pd.DataFrame(
+        {
+            "ts_utc": pd.to_datetime(df["dtime_utc"]).dt.tz_localize("UTC"),
+            "publikacja_utc": pd.to_datetime(df["publication_ts_utc"]).dt.tz_localize("UTC"),
+            "doba": pd.to_datetime(df["business_date"]).dt.date,
+            "zapotrzebowanie_plan": df["kse_pow_dem"],
+            "wiatr_plan": df["gen_wi"],
+            "pv_plan": df["gen_fv"],
+        }
+    ).reset_index(drop=True)

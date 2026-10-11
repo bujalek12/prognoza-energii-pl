@@ -28,7 +28,11 @@ Decyzje wynikaja z eksploracji danych (`notebooks/01_eksploracja.ipynb`).
 | 7 | Kalendarz swiat jako wymiar | Wyrazny spadek popytu w Wielkanoc |
 | 8 | Ladowanie idempotentne (upsert po kluczu) | Ponowne uruchomienie nie moze dublowac danych |
 
+## Rozstrzygniete w etapie 2
+- **Czy dane wykonawcze bywaja korygowane?** Tak, nawet po miesiacach (26.10.2025 opublikowane
+  ponownie 18.01.2026). Pipeline odswieza 3 ostatnie doby przy kazdym ladowaniu; pelne
+  przeladowanie okresowe w etapie 7.
+
 ## Otwarte pytania
 - Definicje `kse_pow_dem` (plan) vs `demand` (wykonanie) — dokumentacja PSE
-- Czy dane wykonawcze bywaja korygowane po publikacji?
-- Dwie galezie na wykresie PV vs promieniowanie — przesuniecie czasowe?
+- Dwie galezie na wykresie PV vs promieniowanie — przesuniecie czasowe? (etap 5)

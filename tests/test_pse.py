@@ -10,7 +10,7 @@ import httpx
 import pandas as pd
 import pytest
 
-from energia.pse import BladPobierania, pobierz_raport, wykonanie_do_ramki
+from energia.pse import BladPobierania, plan_do_ramki, pobierz_raport, wykonanie_do_ramki
 
 
 def klient_z(obsluga) -> httpx.Client:
@@ -175,3 +175,43 @@ def test_odrzuca_zduplikowany_kwadrans():
 
     with pytest.raises(ValueError, match="duplikat"):
         wykonanie_do_ramki(wiersze)
+
+
+# --- Plan PSE (pdgobpkd) ------------------------------------------------------------------
+
+
+def wiersz_planu(dtime_utc: str, publikacja: str, kse=17000.0, wi=1200.0, fv=900.0) -> dict:
+    return {
+        "dtime_utc": dtime_utc,
+        "business_date": "2025-09-10",
+        "kse_pow_dem": kse,
+        "gen_wi": wi,
+        "gen_fv": fv,
+        "publication_ts_utc": publikacja,
+    }
+
+
+def test_plan_ma_klucz_kwadrans_i_moment_publikacji():
+    df = plan_do_ramki([wiersz_planu("2025-09-10 08:15:00", "2025-09-11 01:31:50.716", kse=18550.0, wi=1277.0, fv=9283.0)])
+
+    assert df.to_dict("records") == [
+        {
+            "ts_utc": pd.Timestamp("2025-09-10 08:15", tz="UTC"),
+            "publikacja_utc": pd.Timestamp("2025-09-11 01:31:50.716", tz="UTC"),
+            "doba": date(2025, 9, 10),
+            "zapotrzebowanie_plan": 18550.0,
+            "wiatr_plan": 1277.0,
+            "pv_plan": 9283.0,
+        }
+    ]
+
+
+def test_plan_pomija_wiersze_bez_prognozy_zapotrzebowania():
+    df = plan_do_ramki(
+        [
+            wiersz_planu("2025-09-10 08:15:00", "2025-09-11 01:31:50"),
+            wiersz_planu("2025-09-10 08:30:00", "2025-09-11 01:31:50", kse=None),
+        ]
+    )
+
+    assert df["ts_utc"].tolist() == [pd.Timestamp("2025-09-10 08:15", tz="UTC")]

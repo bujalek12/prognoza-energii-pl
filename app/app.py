@@ -1,23 +1,24 @@
-"""Bilans KSE: zapotrzebowanie, generacja wiatrowa i PV z API PSE.
+"""Bilans KSE: zapotrzebowanie, generacja wiatrowa i PV (dane z lokalnej bazy DuckDB).
 
 Uruchomienie: uv run streamlit run app/app.py
 """
 
-from datetime import date, timedelta
+from datetime import date
 
 import altair as alt
-import httpx
+import duckdb
 import pandas as pd
 import streamlit as st
 
+from energia import odczyt
+from energia.pipeline import BAZA
 from etapy import ETAPY, NOTATKI
 
 st.set_page_config(page_title="Bilans KSE", layout="wide", initial_sidebar_state="collapsed")
 
-PSE_API = "https://api.raporty.pse.pl/api"
 REPO = "https://github.com/bujalek12/prognoza-energii-pl"
-NAZWY = {"demand": "Zapotrzebowanie", "wi": "Wiatr", "pv": "Fotowoltaika"}
 REZ = "Rezydualne"
+PL = "Europe/Warsaw"
 
 # Dwa motywy. Kolory serii sa dobrane osobno pod kazde tlo i sprawdzone walidatorem
 # palety (rozroznialnosc dla daltonistow, kontrast z tlem), nie odwrocone automatycznie.
@@ -35,28 +36,17 @@ MOTYWY = {
 }
 
 
-# Tymczasowe pobieranie: w etapie 2 zastapi je modul ingestii z retry, walidacja i archiwum.
-@st.cache_data(ttl=900, show_spinner="Pobieram dane z PSE…")
-def pobierz_wykonanie(od: date, do: date) -> pd.DataFrame:
-    url = f"{PSE_API}/his-wlk-cal"
-    params = {"$filter": f"business_date ge '{od}' and business_date le '{do}'"}
-    wiersze = []
-    with httpx.Client(timeout=60) as klient:
-        while url:
-            odp = klient.get(url, params=params)
-            odp.raise_for_status()
-            dane = odp.json()
-            wiersze.extend(dane["value"])
-            url, params = dane.get("nextLink"), None
-    df = pd.DataFrame(wiersze)
-    df["czas"] = (
-        pd.to_datetime(df["dtime_utc"]).dt.tz_localize("UTC").dt.tz_convert("Europe/Warsaw")
-    )
-    # API zwraca tez przyszle (albo jeszcze niepelne) kwadranse z pustymi wartosciami
-    df = df.dropna(subset=["demand", "wi", "pv"]).sort_values("czas").set_index("czas")
-    df = df.rename(columns=NAZWY)[list(NAZWY.values())]
-    df[REZ] = df["Zapotrzebowanie"] - df["Wiatr"] - df["Fotowoltaika"]
-    return df
+# Aplikacja czyta lokalna baze zasilana przez pipeline (python -m energia.pipeline).
+# Polaczenie tylko do odczytu, zeby nie blokowac pipeline'u, gdy pisze do bazy.
+@st.cache_data(ttl=300, show_spinner=False)
+def wczytaj(dni: int) -> tuple[pd.DataFrame, dict]:
+    with duckdb.connect(str(BAZA), read_only=True) as con:
+        con.execute("set TimeZone = 'UTC'")
+        ostatni = con.execute("select max(ts_utc) from wykonanie").fetchone()[0]
+        if ostatni is None:
+            return pd.DataFrame(), {}
+        od = pd.Timestamp(ostatni) - pd.Timedelta(days=dni + 1)
+        return odczyt.wykonanie_od(con, od), odczyt.stan_danych(con)
 
 
 def liczba(x: float) -> str:
@@ -145,7 +135,21 @@ st.markdown(
 # --- Dane -------------------------------------------------------------------------
 okres = st.session_state.get("okres") or "7 dni"
 dni = int(okres.split()[0])
-df = pobierz_wykonanie(date.today() - timedelta(days=dni + 1), date.today())
+def komunikat(tytul: str, tresc: str) -> None:
+    st.markdown(f'<h1 class="teza">{tytul}</h1><p>{tresc}</p>', unsafe_allow_html=True)
+    st.stop()
+
+
+POLECENIE = "<code>uv run python -m energia.pipeline</code>"
+if not BAZA.exists():
+    komunikat("Nie ma jeszcze danych.", f"Pobierz je poleceniem {POLECENIE} i odśwież stronę.")
+try:
+    df, stan = wczytaj(dni)
+except duckdb.IOException:
+    # DuckDB pozwala otworzyc plik tylko jednemu procesowi, gdy ktos do niego pisze
+    komunikat("Trwa aktualizacja danych.", "Pipeline zapisuje teraz bazę. Odśwież stronę za kilka minut.")
+if df.empty:
+    komunikat("Baza nie ma jeszcze pomiarów.", f"Uruchom {POLECENIE} i odśwież stronę.")
 teraz = df.iloc[-1]
 t = df.index[-1]
 wczoraj = df.loc[df.index <= t - pd.Timedelta(hours=24)].iloc[-1]
@@ -260,6 +264,29 @@ with st.expander("Pokaż dane godzinowe"):
         '<p class="przypis">Średnie godzinowe w MW.</p>',
         unsafe_allow_html=True,
     )
+
+st.divider()
+
+# --- Stan danych --------------------------------------------------------------------
+st.subheader("Stan danych")
+OPISY = {
+    "wykonanie": "Pomiary PSE (co 15 min)",
+    "plan_pse": "Archiwum planów PSE (każda wersja)",
+    "pogoda": "Prognozy pogody, 5 punktów (co 1 h)",
+}
+wiersze = "".join(
+    f"<tr><td>{OPISY[t]}</td><td class='prawo'>{liczba(s['wierszy'])}</td>"
+    f"<td class='prawo'>{s['od'].tz_convert(PL):%d.%m.%Y} – {s['do'].tz_convert(PL):%d.%m.%Y}</td>"
+    f"<td class='prawo'>{'—' if t != 'wykonanie' else liczba(s['braki'])}</td>"
+    f"<td class='prawo'>{s['pobrano'].tz_convert(PL):%d.%m %H:%M}</td></tr>"
+    if s["wierszy"] else f"<tr><td>{OPISY[t]}</td><td class='prawo czeka' colspan='4'>brak danych</td></tr>"
+    for t, s in stan.items()
+)
+st.markdown(
+    "<table class='lista'><tr><th>Źródło</th><th class='prawo'>Wierszy</th><th class='prawo'>Zakres</th>"
+    f"<th class='prawo'>Brakujące kwadranse</th><th class='prawo'>Ostatnie pobranie</th></tr>{wiersze}</table>",
+    unsafe_allow_html=True,
+)
 
 st.divider()
 

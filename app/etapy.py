@@ -2,8 +2,8 @@
 
 ETAPY = [
     {"nr": 1, "nazwa": "Eksploracja danych, architektura", "status": "gotowe"},
-    {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "następny"},
-    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": ""},
+    {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "gotowe"},
+    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "następny"},
     {"nr": 4, "nazwa": "Dashboard Power BI", "status": ""},
     {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": ""},
     {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": ""},
@@ -12,6 +12,16 @@ ETAPY = [
 ]
 
 NOTATKI = [
+    (
+        "PSE poprawia pomiary po miesiącach",
+        "Dane za 26.10.2025 mają znacznik publikacji z 18.01.2026. Pipeline przy każdym "
+        "uruchomieniu pobiera ponownie ostatnie 3 doby i nadpisuje je nowszymi wartościami.",
+    ),
+    (
+        "Archiwum planów PSE",
+        "Każda publikacja planu trafia do bazy jako osobna wersja z momentem pobrania. "
+        "Za kilka tygodni będzie z tego uczciwy benchmark: plan znany dzień wcześniej.",
+    ),
     (
         "Zmiana czasu",
         "PSE zapisuje powtórzoną godzinę jako „02a:15”, a doba ma 92, 96 albo 100 "
