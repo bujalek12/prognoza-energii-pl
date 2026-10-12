@@ -63,6 +63,15 @@ codziennie w `fct_ocena_prognoz` od 10.2026.
 Zastrzezenie: w treningu pogoda to archiwalne prognozy o krotkim horyzoncie, wiec w produkcji (prognoza
 pogody na nastepny dzien) blad bedzie nieco wiekszy. Mierzy to wlasnie porownanie na zywo.
 
+## Najnowsze dane z GitHuba
+
+Codzienny workflow trzyma aktualna baze i modele w wydaniu `dane`. Zeby pracowac lokalnie na tym samym:
+
+```bash
+gh release download dane --dir data --pattern energia.duckdb --clobber
+gh release download dane --dir data/model --pattern '*.txt' --pattern '*.json' --pattern '*.parquet' --clobber
+```
+
 ## Automatyzacja (etap 7)
 
 - `.github/workflows/testy.yml`: pytest + `dbt parse` przy kazdym pushu
