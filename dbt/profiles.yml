@@ -1,0 +1,11 @@
+# Profil polaczenia trzymany w repo (zwykle jest w ~/.dbt), bo nie ma tu hasel:
+# DuckDB to plik na dysku. Sciezke mozna nadpisac zmienna ENERGIA_BAZA.
+energia:
+  target: lokalnie
+  outputs:
+    lokalnie:
+      type: duckdb
+      path: "{{ env_var('ENERGIA_BAZA', '../data/energia.duckdb') }}"
+      threads: 4
+      settings:
+        TimeZone: UTC

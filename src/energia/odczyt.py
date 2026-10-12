@@ -1,5 +1,8 @@
 """Zapytania do DuckDB uzywane przez aplikacje Streamlit."""
 
+import json
+from pathlib import Path
+
 import duckdb
 import pandas as pd
 
@@ -50,3 +53,17 @@ def stan_danych(con: duckdb.DuckDBPyConnection) -> dict[str, dict]:
             "braki": braki,
         }
     return stan
+
+
+def wyniki_testow_dbt(run_results: Path) -> dict | None:
+    """Podsumowanie testow z ostatniego `dbt build` (plik dbt/target/run_results.json)."""
+    if not run_results.exists():
+        return None
+    dane = json.loads(run_results.read_text())
+    testy = [r for r in dane["results"] if r["unique_id"].startswith("test.")]
+    return {
+        "testow": len(testy),
+        "zaliczonych": sum(r["status"] == "pass" for r in testy),
+        "nieudane": [r["unique_id"].split(".")[2] for r in testy if r["status"] in ("fail", "error")],
+        "kiedy": pd.Timestamp(dane["metadata"]["generated_at"]),
+    }

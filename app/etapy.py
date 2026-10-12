@@ -3,8 +3,8 @@
 ETAPY = [
     {"nr": 1, "nazwa": "Eksploracja danych, architektura", "status": "gotowe"},
     {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "gotowe"},
-    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "następny"},
-    {"nr": 4, "nazwa": "Dashboard Power BI", "status": ""},
+    {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "gotowe"},
+    {"nr": 4, "nazwa": "Analiza i Power BI", "status": "w toku"},
     {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": ""},
     {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": ""},
     {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": ""},
@@ -12,6 +12,12 @@ ETAPY = [
 ]
 
 NOTATKI = [
+    (
+        "Promieniowanie przesunięte o godzinę",
+        "Open-Meteo podaje promieniowanie jako średnią z godziny poprzedzającej znacznik czasu. "
+        "Po przesunięciu korelacja z generacją PV rośnie z 0,919 do 0,964. To tłumaczy "
+        "„dwie gałęzie” z wykresu w etapie 1.",
+    ),
     (
         "PSE poprawia pomiary po miesiącach",
         "Dane za 26.10.2025 mają znacznik publikacji z 18.01.2026. Pipeline przy każdym "

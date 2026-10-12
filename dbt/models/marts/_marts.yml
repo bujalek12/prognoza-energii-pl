@@ -1,0 +1,61 @@
+version: 2
+
+models:
+  - name: dim_czas
+    description: Wymiar czasu, godzina UTC jako klucz, atrybuty w czasie polskim i kalendarz swiat.
+    columns:
+      - name: godzina_utc
+        data_tests: [unique, not_null]
+      - name: dzien_tygodnia
+        data_tests:
+          - accepted_values: {arguments: {values: [1, 2, 3, 4, 5, 6, 7]}}
+
+  - name: fct_energia_godzinowa
+    description: >
+      Godzinowy bilans KSE z planem PSE, prognozami pogody i kalendarzem.
+      Zrodlo danych dla modelu ML i Power BI. Tylko pelne godziny.
+    columns:
+      - name: godzina_utc
+        description: Poczatek godziny w UTC (klucz).
+        data_tests:
+          - unique
+          - not_null
+          - relationships: {arguments: {to: ref('dim_czas'), field: godzina_utc}}
+      - name: zapotrzebowanie_mw
+        description: Srednie zapotrzebowanie KSE w godzinie (MW = MWh w tej godzinie).
+        data_tests:
+          - not_null
+          - w_zakresie: {arguments: {min: 8000, max: 32000}}
+      - name: wiatr_mw
+        data_tests:
+          - not_null
+          - w_zakresie: {arguments: {min: 0, max: 15000}}
+      - name: pv_mw
+        data_tests:
+          - not_null
+          - w_zakresie: {arguments: {min: 0, max: 25000}}
+      - name: udzial_oze
+        description: (wiatr + PV) / zapotrzebowanie. Moze przekroczyc 1 przy nadwyzce OZE.
+        data_tests:
+          - w_zakresie: {arguments: {min: 0, max: 1.5}}
+      - name: temperatura_c
+        data_tests:
+          - w_zakresie: {arguments: {min: -35, max: 42}}
+
+  - name: fct_bilans_dzienny
+    description: Bilans dobowy (doba wg czasu polskiego) w GWh. Tylko pelne doby.
+    columns:
+      - name: data
+        data_tests: [unique, not_null]
+      - name: liczba_godzin
+        data_tests:
+          - accepted_values: {arguments: {values: [23, 24, 25]}}
+
+  - name: dim_data
+    description: Wymiar dat (dzien) dla Power BI, z polskimi nazwami miesiecy i typem dnia.
+    columns:
+      - name: data
+        data_tests: [unique, not_null]
+      - name: typ_dnia
+        data_tests:
+          - accepted_values: {arguments: {values: ['dzień roboczy', 'sobota', 'niedziela i święto']}}

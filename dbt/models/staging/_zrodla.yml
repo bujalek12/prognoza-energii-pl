@@ -1,0 +1,27 @@
+version: 2
+
+sources:
+  - name: surowe
+    description: Surowe tabele zapisywane przez pipeline (src/energia/pipeline.py).
+    schema: main
+    tables:
+      - name: wykonanie
+        description: Pomiary PSE co 15 minut (raport his-wlk-cal). Klucz ts_utc = koniec kwadransa.
+        loaded_at_field: pobrano_utc
+        freshness:
+          warn_after: {count: 26, period: hour}
+          error_after: {count: 50, period: hour}
+        columns:
+          - name: ts_utc
+            data_tests: [unique, not_null]
+      - name: plan_pse
+        description: Archiwum kazdej publikacji planu koordynacyjnego dobowego PSE (pdgobpkd).
+        columns:
+          - name: ts_utc
+            data_tests: [not_null]
+          - name: publikacja_utc
+            data_tests: [not_null]
+      - name: pogoda
+        description: Historyczne prognozy pogody Open-Meteo dla 5 punktow, co godzine.
+      - name: uruchomienia
+        description: Log uruchomien pipeline'u.

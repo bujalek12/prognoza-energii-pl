@@ -5,3 +5,6 @@ __pycache__/
 .venv/
 .DS_Store
 .pytest_cache/
+dbt/target/
+dbt/logs/
+logs/

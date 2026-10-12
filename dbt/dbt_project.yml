@@ -1,0 +1,31 @@
+name: energia
+version: "1.0"
+profile: energia
+config-version: 2
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  energia:
+    staging:
+      +schema: staging
+      +materialized: view      # cienka warstwa: tylko nazwy i typy, bez kopiowania danych
+    intermediate:
+      +schema: intermediate
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table     # gotowe tabele dla aplikacji, Power BI i modelu ML
+
+seeds:
+  energia:
+    +schema: seeds
+    swieta:
+      +column_types:
+        data: date
+        nazwa: varchar

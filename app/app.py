@@ -11,7 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from energia import odczyt
-from energia.pipeline import BAZA
+from energia.pipeline import BAZA, DBT
 from etapy import ETAPY, NOTATKI
 
 st.set_page_config(page_title="Bilans KSE", layout="wide", initial_sidebar_state="collapsed")
@@ -46,7 +46,13 @@ def wczytaj(dni: int) -> tuple[pd.DataFrame, dict]:
         if ostatni is None:
             return pd.DataFrame(), {}
         od = pd.Timestamp(ostatni) - pd.Timedelta(days=dni + 1)
-        return odczyt.wykonanie_od(con, od), odczyt.stan_danych(con)
+        stan = odczyt.stan_danych(con)
+        # ile dob ma juz plan PSE opublikowany przed ich poczatkiem (uczciwy benchmark)
+        stan["plan_pse"]["doby_z_benchmarkiem"] = con.execute(
+            "select count(distinct doba) from plan_pse "
+            "where publikacja_utc < timezone('Europe/Warsaw', doba::timestamp)"
+        ).fetchone()[0]
+        return odczyt.wykonanie_od(con, od), stan
 
 
 def liczba(x: float) -> str:
@@ -287,6 +293,19 @@ st.markdown(
     f"<th class='prawo'>Brakujące kwadranse</th><th class='prawo'>Ostatnie pobranie</th></tr>{wiersze}</table>",
     unsafe_allow_html=True,
 )
+testy = odczyt.wyniki_testow_dbt(DBT / "target" / "run_results.json")
+uwagi = [
+    f"Plan PSE opublikowany przed dobą, której dotyczy: {stan['plan_pse'].get('doby_z_benchmarkiem', 0)} dób "
+    "w archiwum. Ta liczba rośnie o jedną dobę dziennie."
+]
+if testy:
+    wynik = (
+        f"wszystkie {testy['testow']} zaliczone"
+        if not testy["nieudane"]
+        else f"{testy['zaliczonych']} z {testy['testow']} zaliczonych, nieudane: {', '.join(testy['nieudane'])}"
+    )
+    uwagi.insert(0, f"Testy jakości danych (dbt, {testy['kiedy'].tz_convert(PL):%d.%m %H:%M}): {wynik}.")
+st.markdown("".join(f'<p class="przypis">{u}</p>' for u in uwagi), unsafe_allow_html=True)
 
 st.divider()
 

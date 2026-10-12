@@ -33,6 +33,10 @@ Decyzje wynikaja z eksploracji danych (`notebooks/01_eksploracja.ipynb`).
   ponownie 18.01.2026). Pipeline odswieza 3 ostatnie doby przy kazdym ladowaniu; pelne
   przeladowanie okresowe w etapie 7.
 
+## Rozstrzygniete w etapie 3
+- **Dwie galezie na wykresie PV vs promieniowanie**: przesuniecie czasowe. Open-Meteo podaje
+  promieniowanie jako srednia z godziny *poprzedzajacej* znacznik czasu. Po przesunieciu
+  korelacja z generacja PV rosnie z 0,919 do 0,964 (`stg_pogoda.sql`).
+
 ## Otwarte pytania
 - Definicje `kse_pow_dem` (plan) vs `demand` (wykonanie) — dokumentacja PSE
-- Dwie galezie na wykresie PV vs promieniowanie — przesuniecie czasowe? (etap 5)

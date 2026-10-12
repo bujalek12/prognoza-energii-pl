@@ -1,6 +1,7 @@
 """Codzienna aktualizacja danych: PSE (wykonanie + plan) i Open-Meteo -> DuckDB.
 
-Uruchomienie:  uv run python -m energia.pipeline            (baza: data/energia.duckdb)
+Uruchomienie:  uv run python -m energia.pipeline            (pobranie + dbt build)
+               uv run python -m energia.pipeline --bez-dbt  (samo pobranie)
                uv run python -m energia.pipeline --baza x.duckdb
 """
 
@@ -21,7 +22,9 @@ from energia.pogoda import pobierz_pogode
 from energia.pse import plan_do_ramki, pobierz_raport, wykonanie_do_ramki
 
 POCZATEK_HISTORII = date(2024, 6, 14)  # pierwsza doba dostepna w API PSE
-BAZA = Path(__file__).resolve().parents[2] / "data" / "energia.duckdb"
+PROJEKT = Path(__file__).resolve().parents[2]
+BAZA = PROJEKT / "data" / "energia.duckdb"
+DBT = PROJEKT / "dbt"
 
 log = logging.getLogger("energia")
 
@@ -79,9 +82,23 @@ def aktualizuj(
     return wynik
 
 
+def przebuduj_hurtownie(baza: Path) -> None:
+    """Uruchamia `dbt build`: modele staging -> marts i wszystkie testy jakosci danych."""
+    import os
+
+    from dbt.cli.main import dbtRunner  # import tutaj: dbt laduje sie kilka sekund
+
+    os.environ["ENERGIA_BAZA"] = str(baza.resolve())
+    wynik = dbtRunner().invoke(["build", "--project-dir", str(DBT), "--profiles-dir", str(DBT), "--quiet"])
+    if not wynik.success:
+        raise RuntimeError("dbt build nie przeszedl: sprawdz testy jakosci danych (dbt/target/run_results.json)")
+    log.info("dbt build: OK")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Aktualizacja danych energetycznych w DuckDB")
     parser.add_argument("--baza", type=Path, default=BAZA, help="sciezka do pliku DuckDB")
+    parser.add_argument("--bez-dbt", action="store_true", help="tylko pobieranie, bez przebudowy hurtowni")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -89,6 +106,9 @@ def main() -> None:
     args.baza.parent.mkdir(parents=True, exist_ok=True)
     with magazyn.polacz(str(args.baza)) as con:
         aktualizuj(con, dzis=date.today())
+    # dbt otwiera baze sam, wiec najpierw zamykamy nasze polaczenie (DuckDB: jeden pisarz naraz)
+    if not args.bez_dbt:
+        przebuduj_hurtownie(args.baza)
 
 
 if __name__ == "__main__":
