@@ -60,6 +60,10 @@ def wyniki_testow_dbt(run_results: Path) -> dict | None:
     if not run_results.exists():
         return None
     dane = json.loads(run_results.read_text())
+    # Ten sam plik nadpisuja tez inne polecenia dbt (np. docs generate, compile), ktore nie
+    # uruchamiaja testow. Wyniki maja sens tylko po `dbt build` albo `dbt test`.
+    if dane.get("args", {}).get("which", "build") not in ("build", "test"):
+        return None
     testy = [r for r in dane["results"] if r["unique_id"].startswith("test.")]
     return {
         "testow": len(testy),

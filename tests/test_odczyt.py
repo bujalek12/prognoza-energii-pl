@@ -106,3 +106,15 @@ def test_ostrzezenia_dbt_nie_sa_liczone_jako_zaliczone(tmp_path):
 
     assert wynik["zaliczonych"] == 1
     assert wynik["ostrzezenia"] == ["swiezosc_pomiarow"]
+
+
+def test_wyniki_z_dbt_docs_generate_sa_ignorowane(tmp_path):
+    # docs generate nadpisuje run_results.json statusem "success" zamiast wynikow testow
+    plik = tmp_path / "run_results.json"
+    plik.write_text(json.dumps({
+        "metadata": {"generated_at": "2026-10-12T18:26:25Z"},
+        "args": {"which": "generate"},
+        "results": [{"unique_id": "test.energia.a", "status": "success"}],
+    }))
+
+    assert odczyt.wyniki_testow_dbt(plik) is None

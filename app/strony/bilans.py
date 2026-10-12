@@ -9,7 +9,7 @@ import streamlit as st
 
 from energia import odczyt
 from energia.formatowanie import odmiana
-from energia.pipeline import BAZA, DBT
+from energia.pipeline import BAZA, WYNIKI_DBT
 from etapy import ETAPY, NOTATKI
 from wspolne import PL, POLECENIE, REPO, REZ, komunikat, liczba, motyw, os_y_mw, sprawdz_baze, wyglad
 
@@ -175,7 +175,7 @@ st.markdown(
     f"<th class='prawo'>Brakujące kwadranse</th><th class='prawo'>Ostatnie pobranie</th></tr>{wiersze}</table>",
     unsafe_allow_html=True,
 )
-testy = odczyt.wyniki_testow_dbt(DBT / "target" / "run_results.json")
+testy = odczyt.wyniki_testow_dbt(WYNIKI_DBT)
 uwagi = [
     f"Plan PSE opublikowany przed dobą, której dotyczy: {(n := stan['plan_pse'].get('doby_z_benchmarkiem', 0))} "
     f"{odmiana(n, 'doba', 'doby', 'dób')} w archiwum. Ta liczba rośnie o jedną dobę dziennie."

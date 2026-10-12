@@ -7,6 +7,7 @@ Uruchomienie:  uv run python -m energia.pipeline            (pobranie + dbt buil
 
 import argparse
 import logging
+import shutil
 import time
 from collections.abc import Callable
 from datetime import date, timedelta
@@ -25,6 +26,7 @@ POCZATEK_HISTORII = date(2024, 6, 14)  # pierwsza doba dostepna w API PSE
 PROJEKT = Path(__file__).resolve().parents[2]
 BAZA = PROJEKT / "data" / "energia.duckdb"
 DBT = PROJEKT / "dbt"
+WYNIKI_DBT = PROJEKT / "data" / "dbt_wyniki_testow.json"
 
 log = logging.getLogger("energia")
 
@@ -90,8 +92,10 @@ def przebuduj_hurtownie(baza: Path) -> None:
 
     os.environ["ENERGIA_BAZA"] = str(baza.resolve())
     wynik = dbtRunner().invoke(["build", "--project-dir", str(DBT), "--profiles-dir", str(DBT), "--quiet"])
+    # Kopia wynikow obok bazy: `dbt docs generate` nadpisuje target/run_results.json
+    shutil.copyfile(DBT / "target" / "run_results.json", WYNIKI_DBT)
     if not wynik.success:
-        raise RuntimeError("dbt build nie przeszedl: sprawdz testy jakosci danych (dbt/target/run_results.json)")
+        raise RuntimeError(f"dbt build nie przeszedl: sprawdz testy jakosci danych ({WYNIKI_DBT})")
     log.info("dbt build: OK")
 
 
