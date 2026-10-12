@@ -196,7 +196,7 @@ def main() -> None:
 
 
 def zapisz_w_mlflow(podsumowanie: dict) -> None:
-    """Jeden przebieg MLflow na cel: parametry, metryki backtestu i pliki wynikow.
+    """Jeden przebieg MLflow na cel: parametry i metryki backtestu.
 
     Baza MLflow w data/mlflow.db; przegladanie: uv run mlflow ui --backend-store-uri sqlite:///data/mlflow.db
     """
@@ -214,8 +214,8 @@ def zapisz_w_mlflow(podsumowanie: dict) -> None:
                 "obciazenie_mw": m["model"]["obciazenie"], "pokrycie_80": m["pokrycie_80"],
                 "pokrycie_80_po_kalibracji": m["kalibracja"]["pokrycie_po_poza_proba"],
             })
-            for plik in ("metryki.json", "waznosc_cech.json"):
-                mlflow.log_artifact(str(KATALOG / plik))
+            # Bez log_artifact: MLflow zapisuje w bazie bezwzgledna sciezke do plikow, ktora nie istnieje
+            # na innej maszynie (Mac vs serwer GitHuba). Pliki wynikow i tak leza w wydaniu "dane".
 
 
 def _klucz(nazwa_kolumny: str) -> str:

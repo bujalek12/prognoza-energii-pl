@@ -1,5 +1,6 @@
 # Codzienna aktualizacja: dane PSE i pogoda -> hurtownia dbt -> prognoza modelu na jutro.
-# Baza DuckDB i modele miedzy uruchomieniami leza jako zalaczniki wydania "dane" w tym repo
+# Baza DuckDB, modele i rejestr MLflow (tylko z treningow na GitHubie) leza miedzy uruchomieniami
+# jako zalaczniki wydania "dane" w tym repo
 # (35 MB to za duzo, zeby commitowac baze codziennie do historii gita).
 name: codziennie
 
