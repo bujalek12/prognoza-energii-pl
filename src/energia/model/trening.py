@@ -125,6 +125,14 @@ def waznosc_cech(model: lgb.LGBMRegressor, X: pd.DataFrame) -> pd.Series:
     return pd.Series(np.abs(wklady).mean(axis=0), index=X.columns).sort_values(ascending=False)
 
 
+def skrot_metryk(podsumowanie: dict) -> dict:
+    """nMAE modelu, prognozy naiwnej i planu PSE dla kazdego celu (do logu)."""
+    return {
+        cel: {zrodlo: round(m[zrodlo]["nmae"], 4) for zrodlo in ("model", "naiwna", "plan_pse_ostatni")}
+        for cel, m in podsumowanie.items()
+    }
+
+
 def kalibracje(bt: pd.DataFrame) -> dict:
     """Dla kazdego celu: wspolczynnik poszerzenia przedzialu 80% z calego backtestu (do produkcji)
     oraz uczciwa ocena metody: kalibracja na pierwszej polowie miesiecy, pokrycie na drugiej."""
@@ -171,8 +179,7 @@ def main() -> None:
     for cel, kal in kalibracje(bt).items():
         podsumowanie[cel]["kalibracja"] = kal
     (KATALOG / "metryki.json").write_text(json.dumps(podsumowanie, indent=2, ensure_ascii=False))
-    log.info("metryki: %s", json.dumps({c: {k: round(v["nmae"], 4) for k, v in m.items() if isinstance(v, dict)}
-                                         for c, m in podsumowanie.items()}))
+    log.info("metryki: %s", json.dumps(skrot_metryk(podsumowanie)))
 
     # modele koncowe: cala historia, do prognoz na jutro
     waznosci = {}
@@ -205,6 +212,7 @@ def zapisz_w_mlflow(podsumowanie: dict) -> None:
                 "nmae_model": m["model"]["nmae"], "nmae_naiwna": m["naiwna"]["nmae"],
                 "nmae_plan_pse_ostatni": m["plan_pse_ostatni"]["nmae"], "mae_model_mw": m["model"]["mae"],
                 "obciazenie_mw": m["model"]["obciazenie"], "pokrycie_80": m["pokrycie_80"],
+                "pokrycie_80_po_kalibracji": m["kalibracja"]["pokrycie_po_poza_proba"],
             })
             for plik in ("metryki.json", "waznosc_cech.json"):
                 mlflow.log_artifact(str(KATALOG / plik))
