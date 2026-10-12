@@ -65,5 +65,6 @@ def wyniki_testow_dbt(run_results: Path) -> dict | None:
         "testow": len(testy),
         "zaliczonych": sum(r["status"] == "pass" for r in testy),
         "nieudane": [r["unique_id"].split(".")[2] for r in testy if r["status"] in ("fail", "error")],
+        "ostrzezenia": [r["unique_id"].split(".")[2] for r in testy if r["status"] == "warn"],
         "kiedy": pd.Timestamp(dane["metadata"]["generated_at"]),
     }

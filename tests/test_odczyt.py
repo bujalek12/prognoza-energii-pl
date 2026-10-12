@@ -90,3 +90,19 @@ def test_wyniki_testow_dbt_licza_tylko_testy_i_wymieniaja_nieudane(tmp_path):
 
 def test_brak_pliku_z_wynikami_dbt_to_none(tmp_path):
     assert odczyt.wyniki_testow_dbt(tmp_path / "nie_ma.json") is None
+
+
+def test_ostrzezenia_dbt_nie_sa_liczone_jako_zaliczone(tmp_path):
+    plik = tmp_path / "run_results.json"
+    plik.write_text(json.dumps({
+        "metadata": {"generated_at": "2026-10-12T18:24:27Z"},
+        "results": [
+            {"unique_id": "test.energia.a", "status": "pass"},
+            {"unique_id": "test.energia.swiezosc_pomiarow", "status": "warn"},
+        ],
+    }))
+
+    wynik = odczyt.wyniki_testow_dbt(plik)
+
+    assert wynik["zaliczonych"] == 1
+    assert wynik["ostrzezenia"] == ["swiezosc_pomiarow"]

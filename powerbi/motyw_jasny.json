@@ -1,0 +1,118 @@
+{
+  "name": "Bilans KSE jasny",
+  "dataColors": [
+    "#2a78d6",
+    "#1baf7a",
+    "#eda100",
+    "#14212b",
+    "#5598e7",
+    "#9085e9",
+    "#e87ba4",
+    "#8ca0b3"
+  ],
+  "background": "#f2f5f7",
+  "foreground": "#14212b",
+  "tableAccent": "#2a78d6",
+  "good": "#1baf7a",
+  "neutral": "#5b6b78",
+  "bad": "#e34948",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 13,
+      "color": "#14212b"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#14212b"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#5b6b78"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 28,
+      "color": "#14212b"
+    }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#f2f5f7"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": {
+              "solid": {
+                "color": "#f2f5f7"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#ffffff"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": false
+          }
+        ],
+        "valueAxis": [
+          {
+            "gridlineColor": {
+              "solid": {
+                "color": "#d5dee5"
+              }
+            },
+            "labelColor": {
+              "solid": {
+                "color": "#5b6b78"
+              }
+            }
+          }
+        ],
+        "categoryAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#5b6b78"
+              }
+            },
+            "gridlineShow": false
+          }
+        ],
+        "legend": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#14212b"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

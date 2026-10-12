@@ -1,0 +1,118 @@
+{
+  "name": "Bilans KSE ciemny",
+  "dataColors": [
+    "#3987e5",
+    "#199e70",
+    "#c98500",
+    "#e6edf2",
+    "#5598e7",
+    "#9085e9",
+    "#e87ba4",
+    "#8ca0b3"
+  ],
+  "background": "#0f1a24",
+  "foreground": "#e6edf2",
+  "tableAccent": "#3987e5",
+  "good": "#199e70",
+  "neutral": "#8ca0b3",
+  "bad": "#e34948",
+  "textClasses": {
+    "title": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 13,
+      "color": "#e6edf2"
+    },
+    "header": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 12,
+      "color": "#e6edf2"
+    },
+    "label": {
+      "fontFace": "Segoe UI",
+      "fontSize": 10,
+      "color": "#8ca0b3"
+    },
+    "callout": {
+      "fontFace": "Segoe UI Semibold",
+      "fontSize": 28,
+      "color": "#e6edf2"
+    }
+  },
+  "visualStyles": {
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#0f1a24"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": {
+              "solid": {
+                "color": "#0f1a24"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "*": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#162433"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "border": [
+          {
+            "show": false
+          }
+        ],
+        "valueAxis": [
+          {
+            "gridlineColor": {
+              "solid": {
+                "color": "#24384b"
+              }
+            },
+            "labelColor": {
+              "solid": {
+                "color": "#8ca0b3"
+              }
+            }
+          }
+        ],
+        "categoryAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#8ca0b3"
+              }
+            },
+            "gridlineShow": false
+          }
+        ],
+        "legend": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#e6edf2"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

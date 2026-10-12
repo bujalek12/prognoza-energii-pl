@@ -5,7 +5,7 @@ na dobe naprzod dokladniej niz oficjalny plan operatora (PSE)?
 
 Projekt end-to-end: pipeline danych -> hurtownia -> analiza (Power BI) -> model ML -> wdrozenie.
 
-> Status: **etap 3 / 8 — hurtownia dbt gotowa** (48 testow w Pythonie, 27 testow jakosci danych w dbt)
+> Status: **etap 4 / 8 — analiza gotowa** (66 testow w Pythonie, 27 testow jakosci danych w dbt)
 
 ## Dane
 - [API PSE](https://api.raporty.pse.pl) — wykonanie KSE (co 15 min), plany koordynacyjne
@@ -24,7 +24,8 @@ Szczegoly: [notebook eksploracyjny](notebooks/01_eksploracja.ipynb), [architektu
 ```bash
 uv sync
 uv run python -m energia.pipeline   # pobiera brakujace dane i przebudowuje hurtownie (dbt build)
-uv run streamlit run app/app.py     # aplikacja
+uv run streamlit run app/app.py     # aplikacja (strony: Bilans, Analiza)
+uv run python -m energia.eksport    # dane dla Power BI -> powerbi/dane/*.parquet
 uv run pytest                       # testy
 ```
 
@@ -37,6 +38,29 @@ uv run pytest                       # testy
 | `energia/ladowanie.py` | okno ladowania inkrementalnego z 3-dniowym oknem korekt |
 | `energia/magazyn.py` | DuckDB: upsert pomiarow, archiwum **kazdej wersji** planu PSE, log uruchomien |
 | `energia/pipeline.py` | sklada calosc; idempotentny (ponowne uruchomienie nie dubluje danych) |
+
+## Co pokazuja dane (etap 4)
+
+| | 2024 | 2025 | 2026 |
+|---|---|---|---|
+| Udzial wiatru i PV w zapotrzebowaniu (lip–wrz) | 29,0% | 29,4% | **35,2%** |
+| Godziny z OZE > 50% (cze–wrz) | 420 | 650 | **804** |
+| Zapotrzebowanie rezydualne w letnie poludnie | 9,8 GW | 8,0 GW | **7,3 GW** |
+| Rampa poludnie -> 20:00 (letni dzien roboczy) | 8,5 GW | 9,3 GW | **10,3 GW** |
+
+![Kaczka: zapotrzebowanie rezydualne w letni dzien roboczy](docs/img/kaczka.png)
+
+- Zaleznosc popytu od temperatury ma ksztalt U (minimum ~18–20°C, mroz: +32%); sobota −11%, niedziela/swieto −19%.
+- Najnizsze zapotrzebowanie rezydualne: **Wielkanoc 2026, 11:00 — 2,5 GW** (PV 9,4 GW przy popycie 12,9 GW).
+- Srednia z kilku punktow pogodowych tlumaczy generacje lepiej niz pojedynczy punkt (wiatr 0,90, PV 0,96).
+
+Pelna analiza: [notebooks/02_analiza.ipynb](notebooks/02_analiza.ipynb) · aplikacja, strona *Analiza* ·
+paczka Power BI (dane Parquet, miary DAX, motywy, instrukcja): [powerbi/](powerbi/INSTRUKCJA.md)
+
+<p>
+<img src="docs/img/udzial_oze_miesiecznie.png" width="49%">
+<img src="docs/img/mapa_udzial_oze.png" width="49%">
+</p>
 
 ## Hurtownia (etap 3, dbt)
 

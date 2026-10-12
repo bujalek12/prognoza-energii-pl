@@ -1,0 +1,108 @@
+// =====================================================================================
+//  Miary DAX dla raportu "Bilans KSE"
+//  Model: fct_bilans_dzienny (B), fct_energia_godzinowa (F) -> dim_data (D) po kolumnie [data]
+//  Wklejasz kazda miare przez: Modelowanie -> Nowa miara. Najlepiej do tabeli "_Miary"
+//  (Wprowadz dane -> pusta tabela o nazwie _Miary), zeby miary nie mieszaly sie z kolumnami.
+// =====================================================================================
+
+// ---------- Energia (z bilansu dziennego, GWh) ----------
+
+Zapotrzebowanie GWh =
+    SUM ( fct_bilans_dzienny[zapotrzebowanie_gwh] )
+// Format: 0 "GWh"   (tysiace z separatorem)
+
+Wiatr GWh =
+    SUM ( fct_bilans_dzienny[wiatr_gwh] )
+
+PV GWh =
+    SUM ( fct_bilans_dzienny[pv_gwh] )
+
+OZE GWh =
+    [Wiatr GWh] + [PV GWh]
+
+Rezydualne GWh =
+    SUM ( fct_bilans_dzienny[rezydualne_gwh] )
+
+
+// ---------- Udzial OZE ----------
+
+Udział OZE =
+    DIVIDE ( [OZE GWh], [Zapotrzebowanie GWh] )
+// DIVIDE zamiast "/": przy pustym filtrze zwraca BLANK zamiast bledu dzielenia przez zero.
+// Format: 0,0%
+
+Udział OZE rok wcześniej =
+    CALCULATE ( [Udział OZE], SAMEPERIODLASTYEAR ( dim_data[data] ) )
+// Dziala tylko, gdy dim_data jest oznaczona jako tabela dat (patrz INSTRUKCJA.md, krok 3).
+
+Zmiana udziału OZE r/r (pp) =
+    VAR teraz = [Udział OZE]
+    VAR wczesniej = [Udział OZE rok wcześniej]
+    RETURN
+        IF ( NOT ISBLANK ( wczesniej ), ( teraz - wczesniej ) * 100 )
+// Wynik w punktach procentowych (pp), np. 5,8 = wzrost z 29,4% do 35,2%.
+// Pusty, gdy nie ma danych sprzed roku (czerwiec 2024 to poczatek danych).
+
+OZE GWh od początku roku =
+    TOTALYTD ( [OZE GWh], dim_data[data] )
+
+
+// ---------- Szczyty i minima ----------
+
+Szczyt zapotrzebowania MW =
+    MAX ( fct_bilans_dzienny[szczyt_zapotrzebowania_mw] )
+
+Minimum rezydualne MW =
+    MIN ( fct_bilans_dzienny[minimum_rezydualne_mw] )
+
+Średnia temperatura °C =
+    AVERAGE ( fct_bilans_dzienny[temperatura_srednia_c] )
+
+
+// ---------- Miary godzinowe (z fct_energia_godzinowa) ----------
+
+Godziny z OZE ponad 50% =
+    CALCULATE (
+        COUNTROWS ( fct_energia_godzinowa ),
+        fct_energia_godzinowa[udzial_oze] > 0.5
+    )
+
+Średni udział OZE godzinowy =
+    AVERAGE ( fct_energia_godzinowa[udzial_oze] )
+// Do mapy ciepla godzina x miesiac (srednia z godzin, nie udzial z sum energii).
+
+Rezydualne średnio MW =
+    AVERAGE ( fct_energia_godzinowa[rezydualne_mw] )
+// Do "kaczki": os X = fct_energia_godzinowa[godzina], legenda = dim_data[rok].
+
+Rampa wieczorna GW =
+    VAR poludnie =
+        CALCULATE ( [Rezydualne średnio MW], fct_energia_godzinowa[godzina] IN { 11, 12, 13 } )
+    VAR wieczor =
+        CALCULATE ( [Rezydualne średnio MW], fct_energia_godzinowa[godzina] IN { 19, 20 } )
+    RETURN
+        DIVIDE ( wieczor - poludnie, 1000 )
+// O ile GW musza wzrosnac zrodla konwencjonalne miedzy poludniem a wieczorem.
+
+
+// ---------- Jakosc planu PSE ----------
+
+Błąd planu PSE % (wersja ostatnia) =
+    AVERAGEX (
+        FILTER ( fct_energia_godzinowa, NOT ISBLANK ( fct_energia_godzinowa[plan_zapotrzebowanie_ostatni_mw] ) ),
+        DIVIDE (
+            ABS ( fct_energia_godzinowa[plan_zapotrzebowanie_ostatni_mw] - fct_energia_godzinowa[zapotrzebowanie_mw] ),
+            fct_energia_godzinowa[zapotrzebowanie_mw]
+        )
+    )
+// MAPE. Uwaga: wersja "ostatnia" bywa poprawiana w trakcie doby, wiec zna czesc przyszlosci.
+// Uczciwy benchmark to plan_*_dzien_przed (wypelnia sie od 10.2026, gdy dziala archiwum).
+
+Błąd planu PSE % (dzień przed) =
+    AVERAGEX (
+        FILTER ( fct_energia_godzinowa, NOT ISBLANK ( fct_energia_godzinowa[plan_zapotrzebowanie_dzien_przed_mw] ) ),
+        DIVIDE (
+            ABS ( fct_energia_godzinowa[plan_zapotrzebowanie_dzien_przed_mw] - fct_energia_godzinowa[zapotrzebowanie_mw] ),
+            fct_energia_godzinowa[zapotrzebowanie_mw]
+        )
+    )
