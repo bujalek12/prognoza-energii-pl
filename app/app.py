@@ -1,4 +1,4 @@
-"""Aplikacja Bilans KSE: dwie strony (bilans na zywo i analiza), wspolny motyw.
+"""Aplikacja Bilans KSE: bilans na zywo, analiza i prognoza na jutro, wspolny motyw.
 
 Uruchomienie: uv run streamlit run app/app.py
 """
@@ -12,6 +12,7 @@ st.set_page_config(page_title="Bilans KSE", layout="wide", initial_sidebar_state
 strony = [
     st.Page("strony/bilans.py", title="Bilans", default=True),
     st.Page("strony/analiza.py", title="Analiza", url_path="analiza"),
+    st.Page("strony/prognoza.py", title="Prognoza", url_path="prognoza"),
 ]
 nawigacja = st.navigation(strony, position="hidden")  # wlasny pasek u gory zamiast menu bocznego
 naglowek(strony)

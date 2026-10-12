@@ -1,0 +1,75 @@
+# Codzienna aktualizacja: dane PSE i pogoda -> hurtownia dbt -> prognoza modelu na jutro.
+# Baza DuckDB i modele miedzy uruchomieniami leza jako zalaczniki wydania "dane" w tym repo
+# (35 MB to za duzo, zeby commitowac baze codziennie do historii gita).
+name: codziennie
+
+on:
+  schedule:
+    - cron: "0 8 * * *"      # 8:00 UTC = 10:00 latem / 9:00 zima, przed publikacja planu PSE na jutro
+  workflow_dispatch:
+    inputs:
+      trening:
+        description: "Wymus ponowny trening modeli"
+        type: boolean
+        default: false
+
+concurrency:
+  group: codziennie          # nigdy dwa uruchomienia naraz: oba pisalyby do tej samej bazy
+  cancel-in-progress: false
+
+permissions:
+  contents: write            # potrzebne do aktualizacji zalacznikow wydania
+
+jobs:
+  aktualizacja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120      # pierwsze uruchomienie bez bazy: pelna historia + trening
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+
+      - name: Pobranie bazy i modeli z poprzedniego dnia
+        run: |
+          mkdir -p data/model
+          gh release download dane --dir data --pattern 'energia.duckdb' --pattern 'mlflow.db' || echo "pierwsze uruchomienie: brak bazy"
+          gh release download dane --dir data/model --pattern '*.txt' --pattern '*.json' --pattern '*.parquet' || echo "brak modeli"
+
+      - name: Pipeline (pobranie + dbt build + prognoza na jutro)
+        run: uv run python -m energia.pipeline
+
+      - name: Trening modeli (w poniedzialki, na zadanie albo gdy brak modeli)
+        if: ${{ always() }}
+        run: |
+          if [ "$(date -u +%u)" = "1" ] || [ "${{ inputs.trening }}" = "true" ] || [ ! -f data/model/pv_p50.txt ]; then
+            uv run python -m energia.model.trening
+            uv run python -m energia.model.prognoza
+          else
+            echo "trening pominiety (nie poniedzialek)"
+          fi
+
+      - name: Zapis bazy i modeli do wydania "dane"
+        if: ${{ always() }}
+        run: |
+          gh release view dane >/dev/null 2>&1 || gh release create dane --title "Dane i modele" --notes "Aktualizowane automatycznie przez workflow codziennie."
+          gh release upload dane data/energia.duckdb --clobber
+          [ -f data/mlflow.db ] && gh release upload dane data/mlflow.db --clobber || true
+          gh release upload dane data/model/* --clobber || true
+
+      - name: Podsumowanie
+        if: ${{ always() }}
+        run: |
+          uv run python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import duckdb
+          con = duckdb.connect("data/energia.duckdb", read_only=True)
+          print("### Stan danych\n")
+          print("| zrodlo | od | do | wierszy | kiedy |\n|---|---|---|---|---|")
+          for r in con.sql("select zrodlo, od, do_, wierszy, kiedy_utc from uruchomienia order by kiedy_utc desc limit 4").fetchall():
+              print("| " + " | ".join(str(x) for x in r) + " |")
+          n = con.sql("select count(*) from prognozy_modelu").fetchone()[0]
+          print(f"\nPrognoz modelu w archiwum: {n}")
+          PY

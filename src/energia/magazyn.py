@@ -45,6 +45,27 @@ create table if not exists pogoda (
     primary key (ts_utc, punkt)
 );
 
+create table if not exists pogoda_prognoza (
+    ts_utc         timestamptz not null,
+    punkt          varchar not null,
+    temperatura    double,
+    wiatr_100m     double,
+    promieniowanie double,
+    zachmurzenie   integer,
+    pobrano_utc    timestamptz not null,  -- kazde pobranie to osobna wersja prognozy
+    primary key (ts_utc, punkt, pobrano_utc)
+);
+
+create table if not exists prognozy_modelu (
+    godzina_utc      timestamptz not null,  -- poczatek godziny, ktorej dotyczy prognoza
+    cel              varchar not null,      -- zapotrzebowanie / wiatr / pv
+    wygenerowano_utc timestamptz not null,  -- kiedy model policzyl prognoze
+    p10              double not null,       -- dolna granica przedzialu 80%
+    p50              double not null,       -- mediana: "prognoza punktowa"
+    p90              double not null,       -- gorna granica przedzialu 80%
+    primary key (godzina_utc, cel, wygenerowano_utc)
+);
+
 create table if not exists uruchomienia (
     kiedy_utc timestamptz not null,
     zrodlo    varchar not null,
@@ -59,6 +80,7 @@ _KOLUMNA_DOBY = {
     "wykonanie": "doba",
     "plan_pse": "doba",
     "pogoda": "cast(ts_utc as date)",
+    "pogoda_prognoza": "cast(ts_utc as date)",
 }
 
 
@@ -117,3 +139,28 @@ def zapisz_uruchomienie(
 ) -> None:
     """Jeden wiersz logu na zrodlo i uruchomienie: widac, co i kiedy bylo pobierane."""
     con.execute("insert into uruchomienia values (?, ?, ?, ?, ?)", [kiedy, zrodlo, od, do, wierszy])
+
+
+
+def zapisz_prognoze_pogody(con: duckdb.DuckDBPyConnection, df: pd.DataFrame, pobrano: pd.Timestamp) -> int:
+    """Archiwum prognoz pogody: kazde pobranie osobno (jak plany PSE), nic nie nadpisujemy."""
+    nowe = df.assign(pobrano_utc=pobrano)
+    con.execute(
+        """
+        insert or ignore into pogoda_prognoza
+        select ts_utc, punkt, temperatura, wiatr_100m, promieniowanie, zachmurzenie, pobrano_utc from nowe
+        """
+    )
+    return len(nowe)
+
+
+def zapisz_prognoze_modelu(con: duckdb.DuckDBPyConnection, df: pd.DataFrame, wygenerowano: pd.Timestamp) -> int:
+    """Archiwum prognoz modelu (godzina, cel, kiedy policzono). Potrzebne do rozliczania trafnosci."""
+    nowe = df.assign(wygenerowano_utc=wygenerowano)
+    con.execute(
+        """
+        insert or ignore into prognozy_modelu
+        select godzina_utc, cel, wygenerowano_utc, p10, p50, p90 from nowe
+        """
+    )
+    return len(nowe)

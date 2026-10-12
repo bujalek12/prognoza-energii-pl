@@ -14,6 +14,7 @@ import pandas as pd
 from energia.http import pobierz_json
 
 API = "https://historical-forecast-api.open-meteo.com/v1/forecast"
+API_PROGNOZ = "https://api.open-meteo.com/v1/forecast"  # aktualna prognoza na najblizsze dni
 KAWALEK_DNI = 90  # dlugie zakresy dzielimy, zeby jedna odpowiedz nie byla ogromna i nie lapala timeoutu
 
 # Punkty wybrane pod zjawiska, ktore chcemy tlumaczyc: farmy wiatrowe (polnoc i zachod),
@@ -33,6 +34,17 @@ ZMIENNE = {
     "shortwave_radiation": "promieniowanie",
     "cloud_cover": "zachmurzenie",
 }
+
+
+def _do_ramki(dane: dict, punkt: str) -> pd.DataFrame:
+    godz = pd.DataFrame(dane["hourly"])
+    return pd.DataFrame(
+        {
+            "ts_utc": pd.to_datetime(godz["time"]).dt.tz_localize("UTC"),
+            "punkt": punkt,
+            **{nasza: godz[ich] for ich, nasza in ZMIENNE.items()},
+        }
+    )
 
 
 def _kawalki(od: date, do: date) -> list[tuple[date, date]]:
@@ -72,16 +84,36 @@ def pobierz_pogode(
                     },
                     czekaj=czekaj,
                 )
-                godz = pd.DataFrame(dane["hourly"])
-                ramki.append(
-                    pd.DataFrame(
-                        {
-                            "ts_utc": pd.to_datetime(godz["time"]).dt.tz_localize("UTC"),
-                            "punkt": nazwa,
-                            **{nasza: godz[ich] for ich, nasza in ZMIENNE.items()},
-                        }
-                    )
-                )
+                ramki.append(_do_ramki(dane, nazwa))
+        return pd.concat(ramki, ignore_index=True)
+    finally:
+        if wlasny_klient:
+            klient.close()
+
+
+
+def pobierz_prognoze_pogody(
+    punkty: dict[str, tuple[float, float]] = PUNKTY,
+    klient: httpx.Client | None = None,
+    czekaj: Callable[[float], None] = time.sleep,
+) -> pd.DataFrame:
+    """Aktualna prognoza pogody na dzis i 2 kolejne dni (do prognozy modelu na jutro).
+
+    Te same zmienne i ten sam format co pobierz_pogode(), wiec model dostaje cechy takie jak w treningu.
+    """
+    wlasny_klient = klient is None
+    klient = klient or httpx.Client(timeout=60)
+    try:
+        ramki = []
+        for nazwa, (lat, lon) in punkty.items():
+            dane = pobierz_json(
+                klient,
+                API_PROGNOZ,
+                params={"latitude": lat, "longitude": lon, "forecast_days": 3,
+                        "hourly": ",".join(ZMIENNE), "timezone": "UTC"},
+                czekaj=czekaj,
+            )
+            ramki.append(_do_ramki(dane, nazwa))
         return pd.concat(ramki, ignore_index=True)
     finally:
         if wlasny_klient:

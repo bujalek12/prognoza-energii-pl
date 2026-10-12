@@ -23,5 +23,9 @@ sources:
             data_tests: [not_null]
       - name: pogoda
         description: Historyczne prognozy pogody Open-Meteo dla 5 punktow, co godzine.
+      - name: pogoda_prognoza
+        description: Archiwum aktualnych prognoz pogody (kazde pobranie osobno), do prognozy na jutro.
+      - name: prognozy_modelu
+        description: Archiwum prognoz modelu (godzina, cel, moment wygenerowania, kwantyle).
       - name: uruchomienia
         description: Log uruchomien pipeline'u.

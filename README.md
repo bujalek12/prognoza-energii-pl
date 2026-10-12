@@ -5,7 +5,7 @@ na dobe naprzod dokladniej niz oficjalny plan operatora (PSE)?
 
 Projekt end-to-end: pipeline danych -> hurtownia -> analiza (Power BI) -> model ML -> wdrozenie.
 
-> Status: **etap 4 / 8 — analiza gotowa** (66 testow w Pythonie, 27 testow jakosci danych w dbt)
+> Status: **etapy 1–8 gotowe**, codzienna prognoza dziala; uczciwe porownanie z PSE zbiera dane (86 testow w Pythonie, 29 testow jakosci danych w dbt)
 
 ## Dane
 - [API PSE](https://api.raporty.pse.pl) — wykonanie KSE (co 15 min), plany koordynacyjne
@@ -24,8 +24,10 @@ Szczegoly: [notebook eksploracyjny](notebooks/01_eksploracja.ipynb), [architektu
 ```bash
 uv sync
 uv run python -m energia.pipeline   # pobiera brakujace dane i przebudowuje hurtownie (dbt build)
-uv run streamlit run app/app.py     # aplikacja (strony: Bilans, Analiza)
+uv run streamlit run app/app.py     # aplikacja (strony: Bilans, Analiza, Prognoza)
 uv run python -m energia.eksport    # dane dla Power BI -> powerbi/dane/*.parquet
+uv run python -m energia.model.trening   # backtest + modele (ok. 14 min)
+uv run python -m energia.model.prognoza  # prognoza na jutro (robi ja tez pipeline)
 uv run pytest                       # testy
 ```
 
@@ -38,6 +40,36 @@ uv run pytest                       # testy
 | `energia/ladowanie.py` | okno ladowania inkrementalnego z 3-dniowym oknem korekt |
 | `energia/magazyn.py` | DuckDB: upsert pomiarow, archiwum **kazdej wersji** planu PSE, log uruchomien |
 | `energia/pipeline.py` | sklada calosc; idempotentny (ponowne uruchomienie nie dubluje danych) |
+
+## Model (etapy 5–6)
+
+LightGBM prognozuje **zapotrzebowanie, wiatr i PV na kazda godzine doby D, liczac w D-1**: cechy siegaja
+najwyzej 48 h wstecz (ta sama godzina w D-2), plus prognoza pogody i kalendarz. Wiatr i PV jako ulamek
+maksimum z 30 dni (drzewa nie ekstrapoluja, a moc zainstalowana rosnie). Trzy kwantyle (10/50/90%),
+przedzial 80% kalibrowany konformalnie.
+
+Backtest z rosnacym oknem, 12 miesiecy (11.2025–10.2026), nMAE = sredni blad / srednia wartosc:
+
+| cel | model | prognoza naiwna | plan PSE (wersja ostatnia)* | w przedziale 80% (przed → po kalibracji) |
+|---|---|---|---|---|
+| zapotrzebowanie | **2,8%** | 5,8% | 1,4% | 51% → 90% |
+| wiatr | **19,0%** | 69,3% | 6,5% | 60% → 83% |
+| PV | **11,8%** | 26,7% | 6,0% | 70% → 73% |
+
+\* Wersja ostatnia planu PSE jest poprawiana w trakcie doby (zna czesc przyszlosci), wiec nie jest
+uczciwym benchmarkiem. Uczciwe porownanie, **prognoza modelu i plan PSE, oba sprzed doby**, zbiera sie
+codziennie w `fct_ocena_prognoz` od 10.2026.
+
+Zastrzezenie: w treningu pogoda to archiwalne prognozy o krotkim horyzoncie, wiec w produkcji (prognoza
+pogody na nastepny dzien) blad bedzie nieco wiekszy. Mierzy to wlasnie porownanie na zywo.
+
+## Automatyzacja (etap 7)
+
+- `.github/workflows/testy.yml`: pytest + `dbt parse` przy kazdym pushu
+- `.github/workflows/codziennie.yml`: codziennie 8:00 UTC pobranie danych → `dbt build` z testami →
+  prognoza na jutro; w poniedzialki ponowny trening. Baza i modele miedzy uruchomieniami jako zalaczniki
+  wydania `dane`.
+- MLflow: kazdy trening zapisuje parametry i metryki backtestu (`uv run mlflow ui --backend-store-uri sqlite:///data/mlflow.db`)
 
 ## Co pokazuja dane (etap 4)
 
@@ -99,4 +131,4 @@ uv run dbt docs generate && uv run dbt docs serve   # dokumentacja z grafem zale
 ```
 
 ## Stack
-Python 3.13, uv, httpx, pandas, DuckDB, dbt, pytest, Streamlit, Altair · (wkrotce) LightGBM, MLflow, GitHub Actions
+Python 3.13, uv, httpx, pandas, DuckDB, dbt, LightGBM, MLflow, pytest, Streamlit, Altair, GitHub Actions, Power BI

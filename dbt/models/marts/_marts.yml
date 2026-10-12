@@ -59,3 +59,14 @@ models:
       - name: typ_dnia
         data_tests:
           - accepted_values: {arguments: {values: ['dzień roboczy', 'sobota', 'niedziela i święto']}}
+
+  - name: fct_ocena_prognoz
+    description: >
+      Prognoza modelu policzona przed doba vs plan PSE opublikowany przed doba vs wykonanie.
+      Uczciwy benchmark: obie strony wiedza tylko to, co bylo znane dzien wczesniej.
+    data_tests:
+      - unikalna_kombinacja: {arguments: {kolumny: [godzina_utc, cel]}}
+    columns:
+      - name: cel
+        data_tests:
+          - accepted_values: {arguments: {values: ['zapotrzebowanie', 'wiatr', 'pv']}}

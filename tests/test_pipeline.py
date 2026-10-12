@@ -30,9 +30,13 @@ class FalszywePSE:
 
 
 def falszywa_pogoda(zadanie: httpx.Request) -> httpx.Response:
-    # Jak prawdziwe API: zwraca dane z zapytanego zakresu (tu jedna godzina, ostatniego dnia)
-    koniec = zadanie.url.params["end_date"]
-    godzina = [f"{koniec}T08:00"] if koniec == "2026-10-11" else []
+    # Jak prawdziwe API: archiwum zwraca dane z zapytanego zakresu (tu jedna godzina ostatniego dnia),
+    # API prognoz (forecast_days) zwraca godzine jutra
+    if "forecast_days" in zadanie.url.params:
+        godzina = ["2026-10-12T08:00"]
+    else:
+        koniec = zadanie.url.params["end_date"]
+        godzina = [f"{koniec}T08:00"] if koniec == "2026-10-11" else []
     return httpx.Response(200, json={"hourly": {
         "time": godzina, "temperature_2m": [12.0] * len(godzina), "wind_speed_100m": [25.0] * len(godzina),
         "shortwave_radiation": [300.0] * len(godzina), "cloud_cover": [40] * len(godzina),
@@ -94,8 +98,8 @@ def test_dwukrotne_uruchomienie_nie_dubluje_danych(baza):
 def test_zwraca_podsumowanie_i_zapisuje_je_w_logu(baza):
     podsumowanie = uruchom(baza, FalszywePSE())
 
-    assert podsumowanie == {"wykonanie": 1, "plan_pse": 1, "pogoda": 5}
-    assert baza.sql("select count(*) from uruchomienia").fetchone()[0] == 3
+    assert podsumowanie == {"wykonanie": 1, "plan_pse": 1, "pogoda": 5, "pogoda_prognoza": 5}
+    assert baza.sql("select count(*) from uruchomienia").fetchone()[0] == 4
 
 
 def test_awaria_jednego_zrodla_nie_blokuje_pozostalych(baza):
@@ -116,5 +120,12 @@ def test_awaria_jednego_zrodla_nie_blokuje_pozostalych(baza):
 
     assert baza.sql("select count(*) from pogoda").fetchone()[0] == 5
     assert baza.sql("select zrodlo, wierszy from uruchomienia order by zrodlo").fetchall() == [
-        ("plan_pse", -1), ("pogoda", 5), ("wykonanie", 1)
+        ("plan_pse", -1), ("pogoda", 5), ("pogoda_prognoza", 5), ("wykonanie", 1)
     ]
+
+
+def test_kazde_uruchomienie_dopisuje_nowa_wersje_prognozy_pogody(baza):
+    uruchom(baza, FalszywePSE())
+    uruchom(baza, FalszywePSE())
+
+    assert baza.sql("select count(distinct pobrano_utc) from pogoda_prognoza").fetchone()[0] == 2

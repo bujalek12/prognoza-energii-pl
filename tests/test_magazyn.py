@@ -114,3 +114,27 @@ def test_log_zapamietuje_uruchomienia(baza):
     assert baza.sql("select zrodlo, od, do_, wierszy from uruchomienia").fetchall() == [
         ("wykonanie", date(2026, 10, 8), date(2026, 10, 11), 384)
     ]
+
+
+# --- Archiwum prognoz pogody i prognoz modelu ------------------------------------------------
+
+
+def test_prognozy_pogody_z_roznych_pobran_sa_przechowywane_osobno(baza):
+    def prognoza(wiatr: float) -> pd.DataFrame:
+        return pd.DataFrame([{"ts_utc": pd.Timestamp("2026-10-13 10:00", tz="UTC"), "punkt": "Pomorze", "temperatura": 10.0,
+                              "wiatr_100m": wiatr, "promieniowanie": 0.0, "zachmurzenie": 50}])
+
+    magazyn.zapisz_prognoze_pogody(baza, prognoza(20.0), pobrano=pd.Timestamp("2026-10-12 06:00", tz="UTC"))
+    magazyn.zapisz_prognoze_pogody(baza, prognoza(25.0), pobrano=pd.Timestamp("2026-10-12 18:00", tz="UTC"))
+
+    assert baza.sql("select wiatr_100m from pogoda_prognoza order by pobrano_utc").fetchall() == [(20.0,), (25.0,)]
+
+
+def test_prognoza_modelu_trafia_do_archiwum_z_momentem_wygenerowania(baza):
+    prognoza = pd.DataFrame([{"godzina_utc": pd.Timestamp("2026-10-13 10:00", tz="UTC"), "cel": "pv",
+                              "p10": 5000.0, "p50": 6000.0, "p90": 7000.0}])
+
+    magazyn.zapisz_prognoze_modelu(baza, prognoza, wygenerowano=pd.Timestamp("2026-10-12 08:00", tz="UTC"))
+    magazyn.zapisz_prognoze_modelu(baza, prognoza, wygenerowano=pd.Timestamp("2026-10-12 08:00", tz="UTC"))
+
+    assert baza.sql("select cel, p50 from prognozy_modelu").fetchall() == [("pv", 6000.0)]

@@ -63,11 +63,11 @@ def naglowek(strony: list) -> dict:
     if "ciemny" not in st.session_state:
         st.session_state.ciemny = st.query_params.get("motyw", "ciemny") != "jasny"
 
-    kolumny = st.columns([2.2, 1, 1, 3, 1.6], vertical_alignment="center")
+    kolumny = st.columns([2.2] + [1] * len(strony) + [2, 1.6], vertical_alignment="center")
     kolumny[0].markdown('<p class="marka">Bilans KSE</p>', unsafe_allow_html=True)
-    for kolumna, strona in zip(kolumny[1:3], strony):
+    for kolumna, strona in zip(kolumny[1:], strony):
         kolumna.page_link(strona)
-    ciemny = kolumny[4].toggle("Tryb ciemny", key="ciemny")
+    ciemny = kolumny[-1].toggle("Tryb ciemny", key="ciemny")
     st.query_params["motyw"] = "ciemny" if ciemny else "jasny"
 
     m = motyw()

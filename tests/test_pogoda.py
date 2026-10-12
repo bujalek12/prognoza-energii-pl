@@ -5,7 +5,7 @@ from datetime import date
 import httpx
 import pandas as pd
 
-from energia.pogoda import PUNKTY, pobierz_pogode
+from energia.pogoda import PUNKTY, pobierz_pogode, pobierz_prognoze_pogody
 
 
 def odpowiedz_open_meteo(czasy: list[str], wiatr: list[float]) -> dict:
@@ -78,3 +78,17 @@ def test_dlugi_zakres_dzieli_na_kawalki_po_najwyzej_90_dniach():
     )
 
     assert zakresy == [("2026-01-01", "2026-03-31"), ("2026-04-01", "2026-05-15")]
+
+
+def test_prognoza_pogody_pyta_api_prognoz_o_kolejne_dni():
+    zapytania = []
+
+    def obsluga(zadanie: httpx.Request) -> httpx.Response:
+        zapytania.append((zadanie.url.host, zadanie.url.params["forecast_days"], zadanie.url.params["timezone"]))
+        return httpx.Response(200, json=odpowiedz_open_meteo(["2026-10-13T12:00"], [30.0]))
+
+    df = pobierz_prognoze_pogody(punkty={"Pomorze": (54.5, 17.0)}, klient=httpx.Client(transport=httpx.MockTransport(obsluga)))
+
+    assert zapytania == [("api.open-meteo.com", "3", "UTC")]
+    assert df.iloc[0]["wiatr_100m"] == 30.0
+    assert df.iloc[0]["ts_utc"] == pd.Timestamp("2026-10-13 12:00", tz="UTC")

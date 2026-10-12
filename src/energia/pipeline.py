@@ -1,6 +1,6 @@
 """Codzienna aktualizacja danych: PSE (wykonanie + plan) i Open-Meteo -> DuckDB.
 
-Uruchomienie:  uv run python -m energia.pipeline            (pobranie + dbt build)
+Uruchomienie:  uv run python -m energia.pipeline            (pobranie + dbt build + prognoza na jutro)
                uv run python -m energia.pipeline --bez-dbt  (samo pobranie)
                uv run python -m energia.pipeline --baza x.duckdb
 """
@@ -19,7 +19,7 @@ import pandas as pd
 
 from energia import magazyn
 from energia.ladowanie import okno_do_pobrania
-from energia.pogoda import pobierz_pogode
+from energia.pogoda import pobierz_pogode, pobierz_prognoze_pogody
 from energia.pse import plan_do_ramki, pobierz_raport, wykonanie_do_ramki
 
 POCZATEK_HISTORII = date(2024, 6, 14)  # pierwsza doba dostepna w API PSE
@@ -59,15 +59,29 @@ def aktualizuj(
     def pogoda(od: date, do: date) -> int:
         return magazyn.zapisz_pogode(con, pobierz_pogode(od, do, klient=klient_pogoda, czekaj=czekaj))
 
+    def prognoza_pogody(od: date, do: date) -> int:
+        # aktualna prognoza na dzis + 2 dni, przy kazdym uruchomieniu nowa wersja w archiwum
+        df = pobierz_prognoze_pogody(klient=klient_pogoda, czekaj=czekaj)
+        return magazyn.zapisz_prognoze_pogody(con, df, pobrano=teraz)
+
     # (zrodlo, funkcja pobierajaca, do kiedy pobierac)
     # Plan PSE siega do JUTRA, bo plan na jutro publikowany jest dzis. Dlatego jako "dzis"
     # podajemy jutro: w bazie legalnie jest juz doba jutrzejsza i nie moze to byc blad.
-    kroki = [("wykonanie", wykonanie, dzis), ("plan_pse", plan, jutro), ("pogoda", pogoda, dzis)]
+    # Prognoza pogody nie ma okna: zawsze pobieramy aktualna (koniec = None).
+    kroki = [
+        ("wykonanie", wykonanie, dzis),
+        ("plan_pse", plan, jutro),
+        ("pogoda", pogoda, dzis),
+        ("pogoda_prognoza", prognoza_pogody, None),
+    ]
 
     wynik: dict[str, int] = {}
     nieudane: list[str] = []
     for zrodlo, pobierz, koniec in kroki:
-        od, do = okno_do_pobrania(magazyn.ostatnia_doba(con, zrodlo), koniec, POCZATEK_HISTORII)
+        if koniec is None:
+            od, do = dzis, dzis + timedelta(days=2)
+        else:
+            od, do = okno_do_pobrania(magazyn.ostatnia_doba(con, zrodlo), koniec, POCZATEK_HISTORII)
         log.info("%s: %s .. %s", zrodlo, od, do)
         try:
             wynik[zrodlo] = pobierz(od, do)
@@ -113,6 +127,19 @@ def main() -> None:
     # dbt otwiera baze sam, wiec najpierw zamykamy nasze polaczenie (DuckDB: jeden pisarz naraz)
     if not args.bez_dbt:
         przebuduj_hurtownie(args.baza)
+        prognozuj_jutro(args.baza)
+
+
+def prognozuj_jutro(baza: Path) -> None:
+    """Prognoza modelu na jutro, jesli modele sa juz wytrenowane (python -m energia.model.trening)."""
+    from energia.model.prognoza import prognozuj_i_zapisz
+    from energia.model.trening import KATALOG
+
+    if not (KATALOG / "pv_p50.txt").exists():
+        log.warning("brak wytrenowanych modeli w %s: pomijam prognoze", KATALOG)
+        return
+    with magazyn.polacz(str(baza)) as con:
+        prognozuj_i_zapisz(con)
 
 
 if __name__ == "__main__":

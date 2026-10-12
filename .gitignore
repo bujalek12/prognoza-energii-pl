@@ -10,3 +10,5 @@ dbt/logs/
 logs/
 dbt/.user.yml
 powerbi/dane/
+data/mlflow.db
+mlruns/

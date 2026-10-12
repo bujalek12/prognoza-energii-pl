@@ -1,0 +1,25 @@
+# Testy przy kazdym pushu i pull requescie: pytest + walidacja projektu dbt.
+name: testy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Zaleznosci
+        run: uv sync --locked
+      - name: Testy (pytest)
+        run: uv run pytest -q
+      - name: Walidacja projektu dbt (bez bazy)
+        working-directory: dbt
+        env:
+          ENERGIA_BAZA: /tmp/pusta.duckdb
+        run: uv run dbt parse

@@ -5,13 +5,19 @@ ETAPY = [
     {"nr": 2, "nazwa": "Ingestia (retry, walidacja, archiwum prognoz)", "status": "gotowe"},
     {"nr": 3, "nazwa": "Hurtownia: DuckDB + dbt", "status": "gotowe"},
     {"nr": 4, "nazwa": "Analiza i Power BI", "status": "gotowe"},
-    {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": "następny"},
-    {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": ""},
-    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": ""},
-    {"nr": 8, "nazwa": "Prognoza na jutro w aplikacji", "status": ""},
+    {"nr": 5, "nazwa": "Model: LightGBM + prognozy pogody", "status": "gotowe"},
+    {"nr": 6, "nazwa": "Porównanie z planem PSE", "status": "zbiera dane"},
+    {"nr": 7, "nazwa": "Automatyzacja: GitHub Actions, MLflow", "status": "gotowe"},
+    {"nr": 8, "nazwa": "Prognoza na jutro w aplikacji", "status": "gotowe"},
 ]
 
 NOTATKI = [
+    (
+        "Model a prognoza naiwna",
+        "W backteście z 12 miesięcy model ma błąd 2,8% dla zapotrzebowania, 19% dla wiatru i 12% dla PV, "
+        "czyli 2–3,5 razy mniej niż prognoza naiwna. Przedziały 80% były za wąskie (51–70% trafień), "
+        "więc są poszerzane kalibracją konformalną.",
+    ),
     (
         "Promieniowanie przesunięte o godzinę",
         "Open-Meteo podaje promieniowanie jako średnią z godziny poprzedzającej znacznik czasu. "

@@ -11,11 +11,14 @@ dependencies = [
     "altair>=6.3.0",
     "duckdb>=1.5.6",
     "httpx>=0.28.1",
+    "lightgbm>=4.7.0",
     "matplotlib>=3.11.2",
+    "mlflow>=3.17.0",
     "pandas>=3.0.6",
     "pyarrow>=25.0.1",
     "python-dateutil>=2.9.0.post0",
     "pytz>=2026.5",
+    "scikit-learn>=1.9.1",
     "streamlit>=1.65.0",
 ]
 
@@ -31,4 +34,5 @@ dev = [
     "jupyter>=1.1.1",
     "jupytext>=1.19.6",
     "pytest>=9.1.1",
+    "watchdog>=6.0.0",
 ]
