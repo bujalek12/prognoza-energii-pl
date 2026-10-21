@@ -5,6 +5,9 @@ na dobe naprzod dokladniej niz oficjalny plan operatora (PSE)?
 
 Projekt end-to-end: pipeline danych -> hurtownia -> analiza (Power BI) -> model ML -> wdrozenie.
 
+**Aplikacja na zywo: [bilans-kse.streamlit.app](https://bilans-kse.streamlit.app/?motyw=ciemny)**
+(bilans systemu, analiza i prognoza na jutro, aktualizowana codziennie)
+
 > Status: **etapy 1–8 gotowe**, codzienna prognoza dziala; uczciwe porownanie z PSE zbiera dane (86 testow w Pythonie, 29 testow jakosci danych w dbt)
 
 ## Dane
