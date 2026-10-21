@@ -65,11 +65,11 @@ pogody na nastepny dzien) blad bedzie nieco wiekszy. Mierzy to wlasnie porownani
 
 ## Najnowsze dane z GitHuba
 
-Codzienny workflow trzyma aktualna baze i modele w wydaniu `dane`. Zeby pracowac lokalnie na tym samym:
+Codzienny workflow trzyma aktualna baze i modele w wydaniu `dane`. Lokalna kopia sama sie nie
+odswieza; zeby miec na komputerze to samo co na GitHubie:
 
 ```bash
-gh release download dane --dir data --pattern energia.duckdb --clobber
-gh release download dane --dir data/model --pattern '*.txt' --pattern '*.json' --pattern '*.parquet' --clobber
+uv run python -m energia.synchronizuj
 ```
 
 ## Automatyzacja (etap 7)
