@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from energia.pipeline import BAZA
+from energia.zdalne import czy_odswiezyc, pobierz_z_wydania
 
 REPO = "https://github.com/bujalek12/prognoza-energii-pl"
 REZ = "Rezydualne"
@@ -152,8 +153,17 @@ def komunikat(tytul: str, tresc: str) -> None:
 
 
 def sprawdz_baze() -> None:
-    if not BAZA.exists():
-        komunikat("Nie ma jeszcze danych.", f"Pobierz je poleceniem {POLECENIE} i odśwież stronę.")
+    """Pilnuje swiezosci danych: gdy bazy nie ma albo ma ponad 6 h, pobiera najnowsza z GitHuba
+    (wydanie "dane", ktore codziennie aktualizuje workflow). Tak dziala tez wersja w chmurze."""
+    if czy_odswiezyc(BAZA, max_wiek_h=6):
+        try:
+            with st.spinner("Pobieram najnowsze dane…"):
+                pobierz_z_wydania(BAZA.parents[1])
+            st.cache_data.clear()  # stare wyniki zapytan nie pasuja do nowej bazy
+        except Exception:
+            if not BAZA.exists():
+                komunikat("Nie udało się pobrać danych.", f"Sprawdź połączenie albo uruchom {POLECENIE}.")
+            # jest starsza baza: pokazujemy ja zamiast bledu
 
 
 @st.cache_data(ttl=600, show_spinner=False)

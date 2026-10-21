@@ -18,6 +18,16 @@ def pobierz_json(
     params: dict | None = None,
     czekaj: Callable[[float], None] = time.sleep,
 ) -> dict:
+    """GET z ponawianiem, wynik jako JSON."""
+    return pobierz(klient, url, params, czekaj).json()
+
+
+def pobierz(
+    klient: httpx.Client,
+    url: str,
+    params: dict | None = None,
+    czekaj: Callable[[float], None] = time.sleep,
+) -> httpx.Response:
     """GET z ponawianiem bledow sieci i serwera: 4 proby, przerwy 1 s, 2 s, 4 s."""
     for proba in range(PROBY):
         try:
@@ -26,7 +36,7 @@ def pobierz_json(
             blad = f"blad polaczenia: {e}"
         else:
             if odp.is_success:
-                return odp.json()
+                return odp
             # 4xx to blad zapytania (zla nazwa raportu, zly filtr): ponawianie nic nie zmieni.
             # Wyjatek: 429 "za duzo zapytan" mija, jesli chwile odczekac.
             if odp.is_client_error and odp.status_code != 429:

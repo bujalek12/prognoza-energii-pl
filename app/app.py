@@ -3,9 +3,15 @@
 Uruchomienie: uv run streamlit run app/app.py
 """
 
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-from wspolne import naglowek
+# kod projektu (src/energia) bez instalowania pakietu: tak dziala tez Streamlit Community Cloud
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from wspolne import naglowek  # noqa: E402
 
 st.set_page_config(page_title="Bilans KSE", layout="wide", initial_sidebar_state="collapsed")
 

@@ -59,6 +59,7 @@ jobs:
           gh release view dane >/dev/null 2>&1 || gh release create dane --title "Dane i modele" --notes "Aktualizowane automatycznie przez workflow codziennie."
           gh release upload dane data/energia.duckdb --clobber
           [ -f data/mlflow.db ] && gh release upload dane data/mlflow.db --clobber || true
+          [ -f data/dbt_wyniki_testow.json ] && gh release upload dane data/dbt_wyniki_testow.json --clobber || true
           gh release upload dane data/model/* --clobber || true
 
       - name: Podsumowanie
