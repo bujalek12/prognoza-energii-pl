@@ -7,6 +7,9 @@ import pytest
 
 from energia import magazyn
 from energia.pipeline import aktualizuj
+from energia.pogoda import PUNKTY
+
+N = len(PUNKTY)  # tyle wierszy pogody na jedna godzine
 
 DZIS = date(2026, 10, 11)
 
@@ -92,13 +95,13 @@ def test_dwukrotne_uruchomienie_nie_dubluje_danych(baza):
     uruchom(baza, FalszywePSE())
 
     liczby = {t: baza.sql(f"select count(*) from {t}").fetchone()[0] for t in ["wykonanie", "plan_pse", "pogoda"]}
-    assert liczby == {"wykonanie": 1, "plan_pse": 1, "pogoda": 5}  # pogoda: 5 punktow x 1 godzina
+    assert liczby == {"wykonanie": 1, "plan_pse": 1, "pogoda": N}  # pogoda: N punktow x 1 godzina
 
 
 def test_zwraca_podsumowanie_i_zapisuje_je_w_logu(baza):
     podsumowanie = uruchom(baza, FalszywePSE())
 
-    assert podsumowanie == {"wykonanie": 1, "plan_pse": 1, "pogoda": 5, "pogoda_prognoza": 5}
+    assert podsumowanie == {"wykonanie": 1, "plan_pse": 1, "pogoda": N, "pogoda_prognoza": N}
     assert baza.sql("select count(*) from uruchomienia").fetchone()[0] == 4
 
 
@@ -118,9 +121,9 @@ def test_awaria_jednego_zrodla_nie_blokuje_pozostalych(baza):
             czekaj=lambda s: None,
         )
 
-    assert baza.sql("select count(*) from pogoda").fetchone()[0] == 5
+    assert baza.sql("select count(*) from pogoda").fetchone()[0] == N
     assert baza.sql("select zrodlo, wierszy from uruchomienia order by zrodlo").fetchall() == [
-        ("plan_pse", -1), ("pogoda", 5), ("pogoda_prognoza", 5), ("wykonanie", 1)
+        ("plan_pse", -1), ("pogoda", N), ("pogoda_prognoza", N), ("wykonanie", 1)
     ]
 
 

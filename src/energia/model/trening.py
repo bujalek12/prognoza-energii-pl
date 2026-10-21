@@ -26,6 +26,8 @@ POGODA = [
     "temperatura_c", "wiatr_100m_sredni_kmh", "promieniowanie_srednie_wm2", "zachmurzenie_srednie_proc",
     "wiatr_pomorze_kmh", "wiatr_wielkopolska_kmh", "wiatr_lubelskie_kmh",
     "promieniowanie_lubelskie_wm2", "promieniowanie_slask_wm2", "promieniowanie_wielkopolska_wm2",
+    # z eksperymentu z 16 wojewodztwami (notebooks/03)
+    "wiatr_100m_odchylenie_kmh", "wiatr_100m_max_kmh", "wiatr_polnoc_kmh", "promieniowanie_odchylenie_wm2",
 ]
 PARAMETRY = dict(
     n_estimators=600, learning_rate=0.03, num_leaves=63, min_child_samples=30,
@@ -41,10 +43,12 @@ class Cel:
     wzgledny: bool       # True: model uczy sie ulamka maksimum z 30 dni (pv, wiatr), nie MW
     plan_pse: str        # kolumna planu PSE do porownania
     naiwna: str          # prognoza naiwna (baseline) do porownania
+    dodatkowe: tuple[str, ...] = ()  # cechy testowane w eksperymentach
 
     @property
     def cechy(self) -> list[str]:
-        return KALENDARZ + POGODA + [f"{self.nazwa}_{s}" for s in ("lag48", "lag168", "srednia_d2", "max30")]
+        opoznienia = [f"{self.nazwa}_{s}" for s in ("lag48", "lag168", "srednia_d2", "max30")]
+        return KALENDARZ + POGODA + opoznienia + list(self.dodatkowe)
 
 
 CELE = {

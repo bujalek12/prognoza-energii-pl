@@ -35,7 +35,11 @@ select
     w.wiatr_lubelskie_kmh,
     w.promieniowanie_lubelskie_wm2,
     w.promieniowanie_slask_wm2,
-    w.promieniowanie_wielkopolska_wm2
+    w.promieniowanie_wielkopolska_wm2,
+    w.wiatr_100m_odchylenie_kmh,
+    w.wiatr_100m_max_kmh,
+    w.wiatr_polnoc_kmh,
+    w.promieniowanie_odchylenie_wm2
 from {{ ref('int_energia_godzinowa') }} e
 join {{ ref('dim_czas') }} c using (godzina_utc)
 left join {{ ref('int_plan_godzinowy') }} p using (godzina_utc)

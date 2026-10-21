@@ -17,15 +17,31 @@ API = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 API_PROGNOZ = "https://api.open-meteo.com/v1/forecast"  # aktualna prognoza na najblizsze dni
 KAWALEK_DNI = 90  # dlugie zakresy dzielimy, zeby jedna odpowiedz nie byla ogromna i nie lapala timeoutu
 
-# Punkty wybrane pod zjawiska, ktore chcemy tlumaczyc: farmy wiatrowe (polnoc i zachod),
-# najwieksza generacja PV (wschod i poludnie) oraz najwieksze osrodki popytu.
+# Stolice 16 wojewodztw + Pomorze (rejon z najwieksza liczba farm wiatrowych). Pierwotnie bylo
+# 5 punktow; eksperyment w notebooks/03 pokazal, ze 16 wojewodztw zmniejsza blad prognozy wiatru
+# o 19%, a PV o 7%. Nazwy pierwszych 5 zostaja, bo uzywa ich hurtownia (Poznan = "Wielkopolska",
+# Katowice = "Slask", Lublin = "Lubelskie").
 PUNKTY: dict[str, tuple[float, float]] = {
     "Pomorze": (54.5, 17.0),
     "Wielkopolska": (52.4, 16.9),
     "Warszawa": (52.23, 21.01),
     "Slask": (50.26, 19.02),
     "Lubelskie": (51.25, 22.57),
+    "Bialystok": (53.13, 23.16),
+    "Bydgoszcz": (53.12, 18.01),
+    "Gdansk": (54.35, 18.65),
+    "Gorzow": (52.73, 15.24),
+    "Kielce": (50.87, 20.63),
+    "Krakow": (50.06, 19.94),
+    "Lodz": (51.76, 19.46),
+    "Olsztyn": (53.78, 20.48),
+    "Opole": (50.67, 17.93),
+    "Rzeszow": (50.04, 22.00),
+    "Szczecin": (53.43, 14.55),
+    "Wroclaw": (51.11, 17.03),
 }
+# Polnoc kraju: tu stoi wiekszosc farm wiatrowych, wiec osobna srednia wiatru dla tego rejonu
+PUNKTY_POLNOCNE = {"Pomorze", "Gdansk", "Szczecin", "Olsztyn", "Bydgoszcz", "Bialystok", "Gorzow"}
 
 # nazwa w Open-Meteo -> nazwa w naszej bazie
 ZMIENNE = {

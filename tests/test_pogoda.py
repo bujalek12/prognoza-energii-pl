@@ -65,6 +65,22 @@ def test_domyslne_punkty_pokrywaja_rejony_wiatru_slonca_i_popytu():
     assert {"Pomorze", "Wielkopolska", "Warszawa", "Slask", "Lubelskie"} <= set(PUNKTY)
 
 
+def test_punkty_obejmuja_stolice_wszystkich_wojewodztw():
+    # Eksperyment (notebooks/03): 16 wojewodztw zamiast 5 punktow -> blad wiatru -19%, PV -7%.
+    # Poznan, Katowice i Lublin to te same miejsca co Wielkopolska, Slask i Lubelskie.
+    stolice = {"Bialystok", "Bydgoszcz", "Gdansk", "Gorzow", "Kielce", "Krakow", "Lodz", "Olsztyn",
+               "Opole", "Rzeszow", "Szczecin", "Wroclaw", "Warszawa", "Wielkopolska", "Slask", "Lubelskie"}
+    assert stolice <= set(PUNKTY)
+    assert len(PUNKTY) == 17  # 16 stolic + Pomorze (najwiecej farm wiatrowych)
+
+
+def test_punkty_polnocne_sa_podzbiorem_wszystkich():
+    from energia.pogoda import PUNKTY_POLNOCNE
+
+    assert PUNKTY_POLNOCNE <= set(PUNKTY)
+    assert {"Gdansk", "Szczecin", "Pomorze"} <= PUNKTY_POLNOCNE
+
+
 def test_dlugi_zakres_dzieli_na_kawalki_po_najwyzej_90_dniach():
     zakresy = []
 
@@ -92,3 +108,15 @@ def test_prognoza_pogody_pyta_api_prognoz_o_kolejne_dni():
     assert zapytania == [("api.open-meteo.com", "3", "UTC")]
     assert df.iloc[0]["wiatr_100m"] == 30.0
     assert df.iloc[0]["ts_utc"] == pd.Timestamp("2026-10-13 12:00", tz="UTC")
+
+
+def test_lista_punktow_polnocnych_w_dbt_zgadza_sie_z_pythonem():
+    # ta sama lista jest w dbt_project.yml (vars) i w pogoda.py; rozjazd zmienilby cechy po cichu
+    from pathlib import Path
+
+    import yaml
+
+    from energia.pogoda import PUNKTY_POLNOCNE
+
+    projekt = yaml.safe_load((Path(__file__).resolve().parents[1] / "dbt" / "dbt_project.yml").read_text())
+    assert set(projekt["vars"]["punkty_polnocne"]) == PUNKTY_POLNOCNE

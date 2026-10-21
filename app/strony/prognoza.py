@@ -8,6 +8,7 @@ import duckdb
 import pandas as pd
 import streamlit as st
 
+from energia.model.monitoring import ocen_ostatnie_dni
 from energia.model.trening import KATALOG
 from wspolne import PL, REZ, komunikat, liczba, motyw, os_y_mw, procent, sprawdz_baze, ulamek, wyglad, zapytanie
 
@@ -195,18 +196,32 @@ if ocena.empty:
         unsafe_allow_html=True,
     )
 else:
+    # ta sama funkcja co w codziennym monitoringu: model i PSE porownane na tych samych godzinach
+    ocena["doba"] = pd.to_datetime(ocena["doba"]).dt.date
+    wyniki = ocen_ostatnie_dni(ocena, dzis=date.today(), dni=3650)
     wiersze = ""
-    for cel, g in ocena.groupby("cel"):
-        z_planem = g.dropna(subset=["blad_pse_mw"])
-        pse = f"{ulamek(z_planem['blad_pse_mw'].mean() / z_planem['faktyczne'].mean() * 100)}%" if len(z_planem) else "—"
+    for cel in ("zapotrzebowanie", "wiatr", "pv"):
+        if cel not in wyniki:
+            continue
+        w = wyniki[cel]
+        if w["nmae_pse"] is None:
+            porownanie = "<td class='prawo czeka' colspan='2'>brak planu sprzed doby</td>"
+        else:
+            porownanie = (f"<td class='prawo'><b>{ulamek(w['nmae_model_wspolne'] * 100)}%</b></td>"
+                          f"<td class='prawo'>{ulamek(w['nmae_pse'] * 100)}%</td>")
         wiersze += (
-            f"<tr><td>{NAZWY[cel]}</td><td class='prawo'>{g['doba'].nunique()}</td>"
-            f"<td class='prawo'><b>{ulamek(g['blad_modelu_mw'].mean() / g['faktyczne'].mean() * 100)}%</b></td>"
-            f"<td class='prawo'>{pse}</td><td class='prawo'>{procent(g['w_przedziale_80'].mean())}</td></tr>"
+            f"<tr><td>{NAZWY[cel]}</td><td class='prawo'>{w['dob']}</td>"
+            f"<td class='prawo'>{ulamek(w['nmae_model'] * 100)}%</td><td class='prawo'>{procent(w['pokrycie'])}</td>"
+            f"<td class='prawo'>{w['dob_z_planem']}</td>{porownanie}</tr>"
         )
     st.markdown(
         "<table class='lista'><tr><th>Cel</th><th class='prawo'>Dób</th><th class='prawo'>Model (nMAE)</th>"
-        f"<th class='prawo'>Plan PSE sprzed doby</th><th class='prawo'>W przedziale 80%</th></tr>{wiersze}</table>",
+        "<th class='prawo'>W przedziale 80%</th><th class='prawo'>Dób z planem PSE</th>"
+        "<th class='prawo'>Model</th><th class='prawo'>Plan PSE</th></tr>"
+        f"{wiersze}</table>"
+        '<p class="przypis">Ostatnie dwie kolumny: model i plan PSE porównane wyłącznie na godzinach, dla których '
+        "archiwum ma plan opublikowany przed dobą. Plan na jutro PSE publikuje wieczorem, więc pipeline "
+        "uruchamia się też wieczorem, żeby go zapisać, zanim zostanie poprawiony.</p>",
         unsafe_allow_html=True,
     )
 

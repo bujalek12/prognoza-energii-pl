@@ -14,6 +14,13 @@ select
     max(promieniowanie_wm2) filter (punkt = 'Lubelskie')                 as promieniowanie_lubelskie_wm2,
     max(promieniowanie_wm2) filter (punkt = 'Slask')                     as promieniowanie_slask_wm2,
     max(promieniowanie_wm2) filter (punkt = 'Wielkopolska')              as promieniowanie_wielkopolska_wm2,
+    -- rozklad przestrzenny (dodane po eksperymencie z 16 wojewodztwami, notebooks/03):
+    -- czy wieje rowno w calym kraju, czy tylko w czesci; i jak wieje na polnocy, gdzie sa farmy
+    stddev_samp(wiatr_100m_kmh)                                          as wiatr_100m_odchylenie_kmh,
+    max(wiatr_100m_kmh)                                                  as wiatr_100m_max_kmh,
+    avg(wiatr_100m_kmh) filter (punkt in ('{{ var("punkty_polnocne") | join("', '") }}'))
+                                                                         as wiatr_polnoc_kmh,
+    stddev_samp(promieniowanie_wm2)                                      as promieniowanie_odchylenie_wm2,
     count(*)                                                             as liczba_punktow
 from {{ relacja }}
 group by 1

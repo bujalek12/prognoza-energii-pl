@@ -8,7 +8,7 @@ Projekt end-to-end: pipeline danych -> hurtownia -> analiza (Power BI) -> model 
 **Aplikacja na zywo: [bilans-kse.streamlit.app](https://bilans-kse.streamlit.app/?motyw=ciemny)**
 (bilans systemu, analiza i prognoza na jutro, aktualizowana codziennie)
 
-> Status: **etapy 1–8 gotowe**, codzienna prognoza dziala; uczciwe porownanie z PSE zbiera dane (86 testow w Pythonie, 29 testow jakosci danych w dbt)
+> Status: **etapy 1–8 gotowe**, codzienna prognoza dziala; uczciwe porownanie z PSE zbiera dane (102 testy w Pythonie, 29 testow jakosci danych w dbt)
 
 ## Dane
 - [API PSE](https://api.raporty.pse.pl) — wykonanie KSE (co 15 min), plany koordynacyjne
@@ -55,13 +55,19 @@ Backtest z rosnacym oknem, 12 miesiecy (11.2025–10.2026), nMAE = sredni blad /
 
 | cel | model | prognoza naiwna | plan PSE (wersja ostatnia)* | w przedziale 80% (przed → po kalibracji) |
 |---|---|---|---|---|
-| zapotrzebowanie | **2,8%** | 5,8% | 1,4% | 51% → 90% |
-| wiatr | **19,0%** | 69,3% | 6,5% | 60% → 83% |
-| PV | **11,8%** | 26,7% | 6,0% | 70% → 73% |
+| zapotrzebowanie | **2,8%** | 5,7% | 1,4% | 51% → 88% |
+| wiatr | **15,2%** | 69,1% | 6,5% | 59% → 85% |
+| PV | **10,9%** | 26,9% | 6,0% | 71% → 72% |
 
 \* Wersja ostatnia planu PSE jest poprawiana w trakcie doby (zna czesc przyszlosci), wiec nie jest
 uczciwym benchmarkiem. Uczciwe porownanie, **prognoza modelu i plan PSE, oba sprzed doby**, zbiera sie
 codziennie w `fct_ocena_prognoz` od 10.2026.
+
+Pogoda z **17 punktow** (stolice 16 wojewodztw + Pomorze). Eksperyment w
+[notebooks/03](notebooks/03_eksperyment_punkty_pogodowe.ipynb): przejscie z 5 punktow zmniejszylo blad
+wiatru z 19,0% do 15,2% i PV z 11,8% do 10,9%, w kazdym z testowanych miesiecy. Zysk nie wzial sie
+z lepszej sredniej (korelacja prawie bez zmian), tylko z rozkladu wiatru: rozrzut miedzy regionami
+i wiatr na polnocy, gdzie stoi najwiecej farm.
 
 Zastrzezenie: w treningu pogoda to archiwalne prognozy o krotkim horyzoncie, wiec w produkcji (prognoza
 pogody na nastepny dzien) blad bedzie nieco wiekszy. Mierzy to wlasnie porownanie na zywo.
@@ -81,6 +87,10 @@ uv run python -m energia.synchronizuj
 - `.github/workflows/codziennie.yml`: codziennie 8:00 UTC pobranie danych → `dbt build` z testami →
   prognoza na jutro; w poniedzialki ponowny trening. Baza i modele miedzy uruchomieniami jako zalaczniki
   wydania `dane`.
+- Monitoring: po kazdej prognozie blad z ostatnich 7 dob vs backtest; gdy jest ponad 2x wiekszy
+  albo przedzial 80% obejmuje < 60% godzin, workflow zaklada zgloszenie (issue) z etykieta `monitoring`
+- Plan PSE na jutro jest publikowany wieczorem, wiec workflow uruchamia sie tez wieczorem
+  (trzy terminy, z zapasem na opoznienia GitHuba), zeby zapisac go przed poranna korekta
 - MLflow: kazdy trening zapisuje parametry i metryki backtestu (`uv run mlflow ui --backend-store-uri sqlite:///data/mlflow.db`)
 
 ## Co pokazuja dane (etap 4)

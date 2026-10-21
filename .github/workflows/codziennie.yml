@@ -6,7 +6,13 @@ name: codziennie
 
 on:
   schedule:
-    - cron: "0 8 * * *"      # 8:00 UTC = 10:00 latem / 9:00 zima, przed publikacja planu PSE na jutro
+    # Rano: prognoza na jutro (GitHub potrafi opoznic start o kilka godzin, nadal przed polnoca)
+    - cron: "7 8 * * *"
+    # Wieczorem: zapis planu PSE na jutro, publikowanego ok. 17:30-19:00 UTC, zanim PSE go poprawi.
+    # Trzy terminy, bo GitHub opoznia uruchomienia; minuty "nieokragle", bo pelne godziny sa najbardziej oblozone.
+    - cron: "17 18 * * *"
+    - cron: "47 19 * * *"
+    - cron: "17 21 * * *"
   workflow_dispatch:
     inputs:
       trening:
@@ -20,6 +26,7 @@ concurrency:
 
 permissions:
   contents: write            # potrzebne do aktualizacji zalacznikow wydania
+  issues: write              # monitoring zaklada zgloszenie, gdy prognozy sie psuja
 
 jobs:
   aktualizacja:
@@ -46,11 +53,27 @@ jobs:
       - name: Trening modeli (w poniedzialki, na zadanie albo gdy brak modeli)
         if: ${{ always() }}
         run: |
-          if [ "$(date -u +%u)" = "1" ] || [ "${{ inputs.trening }}" = "true" ] || [ ! -f data/model/pv_p50.txt ]; then
+          # trening tylko w porannym uruchomieniu w poniedzialek (nie przy kazdym wieczornym)
+          rano=$([ "${{ github.event.schedule }}" = "7 8 * * *" ] && echo tak || echo nie)
+          if { [ "$(date -u +%u)" = "1" ] && [ "$rano" = "tak" ]; } || [ "${{ inputs.trening }}" = "true" ] || [ ! -f data/model/pv_p50.txt ]; then
             uv run python -m energia.model.trening
             uv run python -m energia.model.prognoza
           else
             echo "trening pominiety (nie poniedzialek)"
+          fi
+
+      - name: Monitoring prognoz (alarm -> zgloszenie na GitHubie)
+        if: ${{ always() }}
+        run: |
+          uv run python -m energia.model.monitoring >> "$GITHUB_STEP_SUMMARY"
+          if [ -s data/alarmy.md ]; then
+            numer=$(gh issue list --label monitoring --state open --json number --jq '.[0].number')
+            if [ -n "$numer" ]; then
+              gh issue comment "$numer" --body-file data/alarmy.md
+            else
+              gh label create monitoring --color D93F0B --description "Alarmy jakosci prognoz" --force
+              gh issue create --title "Monitoring: prognozy odbiegaja od backtestu" --label monitoring --body-file data/alarmy.md
+            fi
           fi
 
       - name: Zapis bazy i modeli do wydania "dane"

@@ -10,6 +10,10 @@ macro-paths: ["macros"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+vars:
+  # musi byc zgodne z PUNKTY_POLNOCNE w src/energia/pogoda.py (pilnuje tego test)
+  punkty_polnocne: ["Pomorze", "Gdansk", "Szczecin", "Olsztyn", "Bydgoszcz", "Bialystok", "Gorzow"]
+
 models:
   energia:
     staging:

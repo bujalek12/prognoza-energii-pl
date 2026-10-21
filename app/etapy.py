@@ -14,9 +14,14 @@ ETAPY = [
 NOTATKI = [
     (
         "Model a prognoza naiwna",
-        "W backteście z 12 miesięcy model ma błąd 2,8% dla zapotrzebowania, 19% dla wiatru i 12% dla PV, "
-        "czyli 2–3,5 razy mniej niż prognoza naiwna. Przedziały 80% były za wąskie (51–70% trafień), "
+        "W backteście z 12 miesięcy model ma błąd 2,8% dla zapotrzebowania, 15% dla wiatru i 11% dla PV, "
+        "czyli 2–4,5 razy mniej niż prognoza naiwna. Przedziały 80% były za wąskie (51–71% trafień), "
         "więc są poszerzane kalibracją konformalną.",
+    ),
+    (
+        "16 województw zamiast 5 punktów pogody",
+        "Błąd prognozy wiatru spadł z 19,0% do 15,2%, a PV z 11,8% do 10,9%. Korelacja średniego wiatru "
+        "prawie się nie zmieniła; zysk dał rozkład wiatru: rozrzut między regionami i wiatr na północy.",
     ),
     (
         "Promieniowanie przesunięte o godzinę",
