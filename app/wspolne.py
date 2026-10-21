@@ -152,14 +152,21 @@ def komunikat(tytul: str, tresc: str) -> None:
     st.stop()
 
 
+@st.cache_resource(show_spinner=False)
+def _pobierz_raz(wersja_bazy: float) -> None:
+    """Pobranie z GitHuba najwyzej raz na dana wersje bazy. cache_resource blokuje wywolania
+    z innych sesji, dopoki pierwsze trwa: kilku odwiedzajacych naraz nie sciaga pliku rownolegle."""
+    pobierz_z_wydania(BAZA.parents[1])
+    st.cache_data.clear()  # stare wyniki zapytan nie pasuja do nowej bazy
+
+
 def sprawdz_baze() -> None:
     """Pilnuje swiezosci danych: gdy bazy nie ma albo ma ponad 6 h, pobiera najnowsza z GitHuba
     (wydanie "dane", ktore codziennie aktualizuje workflow). Tak dziala tez wersja w chmurze."""
     if czy_odswiezyc(BAZA, max_wiek_h=6):
         try:
             with st.spinner("Pobieram najnowsze dane…"):
-                pobierz_z_wydania(BAZA.parents[1])
-            st.cache_data.clear()  # stare wyniki zapytan nie pasuja do nowej bazy
+                _pobierz_raz(BAZA.stat().st_mtime if BAZA.exists() else 0.0)
         except Exception:
             if not BAZA.exists():
                 komunikat("Nie udało się pobrać danych.", f"Sprawdź połączenie albo uruchom {POLECENIE}.")
